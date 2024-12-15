@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!--    purple color variations-->
+    <color name="purple_200">#FFBB86FC</color>
+    <color name="purple_500">#FF6200EE</color>
+    <color name="purple_700">#FF3700B3</color>
+
+    <!--    teal color variations-->
+    <color name="teal_200">#FF03DAC5</color>
+    <color name="teal_500">#FF009688</color>
+    <color name="teal_700">#FF018786</color>
+    <color name="teal_900">#015F87</color>
+
+
+    <!--    gray color variations-->
+    <color name="black">#FF000000</color>
+    <color name="white">#FFFFFFFF</color>
+
+    <!--    green color variations-->
+    <!-- Base Green -->
+    <color name="green_500">#4CAF50</color>
+
+    <color name="green_700">#50AA77</color>
+    <!-- Lighter Tints -->
+    <color name="green_400">#8BC34A</color>
+    <color name="green_300">#CDDC39</color>
+    <color name="green_200">#AED581</color>
+    <color name="green_100">#DCEDC8</color>
+    <color name="green_50">#F1F8E9</color>
+
+    <color name="cute_red">#FD5151</color>
+
+</resources>
