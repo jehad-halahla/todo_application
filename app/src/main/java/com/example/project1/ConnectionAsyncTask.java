@@ -1,48 +1,78 @@
 package com.example.project1;
 
-import android.app.Activity;
 import android.os.AsyncTask;
 
+import java.lang.ref.WeakReference;
 import java.util.List;
 
-public class ConnectionAsyncTask extends AsyncTask<String, String, String> {
+/**
+ * AsyncTask to handle network operations for fetching tasks.
+ */
+public class ConnectionAsyncTask extends AsyncTask<String, Void, List<Task>> {
 
-    private final TaskListener listener;
+    // WeakReference to prevent memory leaks
+    private final WeakReference<TaskListener> listenerRef;
+    private String errorMessage = null;
 
+    /**
+     * Constructor accepting a TaskListener.
+     *
+     * @param listener The listener to handle callbacks.
+     */
     public ConnectionAsyncTask(TaskListener listener) {
-        this.listener = listener;
+        this.listenerRef = new WeakReference<>(listener);
     }
 
     @Override
     protected void onPreExecute() {
         super.onPreExecute();
-        // Notify the listener that the task is about to start
+        TaskListener listener = listenerRef.get();
         if (listener != null) {
             listener.onPreExecute();
         }
     }
 
     @Override
-    protected String doInBackground(String... strings) {
-        // Fetch data from the API using the provided URL
-        return HttpManager.getData(strings[0]);
+    protected List<Task> doInBackground(String... strings) {
+        if (strings.length == 0) {
+            errorMessage = "No URL provided";
+            return null;
+        }
+
+        String url = strings[0];
+        // Fetch data from the API
+        String jsonData = HttpManager.getData(url);
+        if (jsonData == null || jsonData.isEmpty()) {
+            errorMessage = "Failed to fetch data or empty response";
+            return null;
+        }
+
+        // Parse JSON data into Task objects
+        List<Task> tasks = TaskJsonParser.getTasksFromJson(jsonData);
+        if (tasks == null) {
+            errorMessage = "Error parsing data";
+            return null;
+        }
+
+        return tasks;
     }
 
     @Override
-    protected void onPostExecute(String s) {
-        super.onPostExecute(s);
-
+    protected void onPostExecute(List<Task> tasks) {
+        super.onPostExecute(tasks);
+        TaskListener listener = listenerRef.get();
         if (listener != null) {
-            if (s != null && !s.isEmpty()) {
-                // Parse the JSON response into Task objects
-                List<Task> tasks = TaskJsonParser.getTasksFromJson(s);
-                listener.onSuccess(tasks); // Notify listener of the success
+            if (tasks != null) {
+                listener.onSuccess(tasks);
             } else {
-                listener.onError("Failed to fetch data or empty response");
+                listener.onError(errorMessage != null ? errorMessage : "Unknown error occurred");
             }
         }
     }
 
+    /**
+     * Interface to handle callbacks from the AsyncTask.
+     */
     public interface TaskListener {
         void onPreExecute();
         void onSuccess(List<Task> tasks);

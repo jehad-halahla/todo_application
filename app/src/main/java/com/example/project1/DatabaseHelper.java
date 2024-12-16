@@ -164,6 +164,22 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         return db.rawQuery(query, new String[]{userEmail, startDate, endDate});
     }
 
+    public String getUserName(String email) {
+        SQLiteDatabase db = this.getReadableDatabase();
+        String query = "SELECT " + COLUMN_FIRST_NAME + ", " + COLUMN_LAST_NAME + " FROM " + TABLE_USER + " WHERE " + COLUMN_EMAIL + " = ?";
+        Cursor cursor = db.rawQuery(query, new String[]{email});
+        String firstName = "";
+        String lastName = "";
+
+        if (cursor.moveToFirst()) {
+            firstName = cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_FIRST_NAME));
+            lastName = cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_LAST_NAME));
+        }
+        cursor.close();
+        db.close();
+        return firstName + " " + lastName;
+    }
+
     public void printDatabaseContents() {
         SQLiteDatabase db = this.getReadableDatabase();
         Cursor cursor = null;

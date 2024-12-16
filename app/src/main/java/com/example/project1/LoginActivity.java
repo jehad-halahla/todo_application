@@ -107,7 +107,9 @@ public class LoginActivity extends AppCompatActivity {
                     clearSavedCredentials(); // Clear if "Remember Me" is unchecked
                 }
 
-                // Navigate to HomeActivity
+                // Navigate to HomeActivity, also save the email and the user first and last name
+                editor.putString("userName", dbHelper.getUserName(email));
+                editor.putString("userEmail", email).commit();
                 navigateToHome();
             } else {
                 showToast("Invalid Credentials!");

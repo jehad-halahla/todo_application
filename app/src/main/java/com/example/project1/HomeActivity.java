@@ -1,11 +1,20 @@
 package com.example.project1;
 
+import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.view.LayoutInflater;
 import android.view.MenuItem;
+import android.view.View;
+import android.widget.ArrayAdapter;
+import android.widget.CheckBox;
+import android.widget.EditText;
+import android.widget.Spinner;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.ActionBarDrawerToggle;
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
 import androidx.core.view.GravityCompat;
@@ -20,11 +29,14 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
-
 /**
  * HomeActivity manages the main screen with a navigation drawer and a RecyclerView to display tasks.
  */
-public class HomeActivity extends AppCompatActivity implements TaskItemAdapter.OnItemClickListener {
+public class HomeActivity extends AppCompatActivity implements TaskItemAdapter.OnItemClickListener, ConnectionAsyncTask.TaskListener {
+
+    // Local variables to store the user's name and email
+    private String userName;
+    private String userEmail;
 
     // UI Components
     private RecyclerView recyclerView;
@@ -34,8 +46,8 @@ public class HomeActivity extends AppCompatActivity implements TaskItemAdapter.O
     private ActionBarDrawerToggle toggle;
 
     // Data Lists
-    private List<Task> originalTaskList = new ArrayList<>();  // Holds all tasks
-    private List<Task> filteredTaskList = new ArrayList<>();  // Holds filtered tasks
+    private final List<Task> originalTaskList = new ArrayList<>();  // Holds all tasks
+    private final List<Task> filteredTaskList = new ArrayList<>();  // Holds filtered tasks
 
     // Adapter
     private TaskItemAdapter taskItemAdapter;
@@ -48,24 +60,32 @@ public class HomeActivity extends AppCompatActivity implements TaskItemAdapter.O
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_home);
 
+        // Retrieve user details from SharedPreferences
+        SharedPreferences sharedPreferences = getSharedPreferences("LoginPrefs", MODE_PRIVATE);
+        userName = sharedPreferences.getString("userName", "User Name"); // Default value if not found
+        userEmail = sharedPreferences.getString("userEmail", "user@example.com"); // Default value if not found
+
         // Initialize UI components
         initializeUIComponents();
 
         // Set up the RecyclerView
         setupRecyclerView();
 
-        // Populate tasks with dummy data
-        populateDummyTasks();
-
         // Initialize the adapter with the filtered task list
         taskItemAdapter = new TaskItemAdapter(this, filteredTaskList, this);
         recyclerView.setAdapter(taskItemAdapter);
+
+        // Populate tasks with data from the API
+        populateDummyTasks();
 
         // Set a default selection and apply the filter
         if (savedInstanceState == null) {
             navigationView.setCheckedItem(R.id.nav_today);
             filterTasks(currentFilter);
         }
+
+        // Set the title of the activity
+        setTitle("Home");
     }
 
     /**
@@ -85,17 +105,18 @@ public class HomeActivity extends AppCompatActivity implements TaskItemAdapter.O
         drawerLayout.addDrawerListener(toggle);
         toggle.syncState();
 
-        // Initialize NavigationView and set its listener
+        // Initialize NavigationView
         navigationView = findViewById(R.id.navigation_view);
         setupNavigationView();
-    }
 
-    /**
-     * Sets up the RecyclerView with a LinearLayoutManager.
-     */
-    private void setupRecyclerView() {
-        recyclerView = findViewById(R.id.task_recycler_view);
-        recyclerView.setLayoutManager(new LinearLayoutManager(this));
+        // Access the header view of the NavigationView
+        View headerView = navigationView.getHeaderView(0);
+
+        // Find and set the user name and email in the navigation header
+        TextView navUserName = headerView.findViewById(R.id.nav_header_name);
+        TextView navUserEmail = headerView.findViewById(R.id.nav_header_email);
+        navUserName.setText(userName);
+        navUserEmail.setText(userEmail);
     }
 
     /**
@@ -113,7 +134,8 @@ public class HomeActivity extends AppCompatActivity implements TaskItemAdapter.O
                         break;
                     case R.id.nav_new_task:
                         // Implement New Task functionality
-                        addNewTask();
+                        Toast.makeText(HomeActivity.this, "New Task clicked", Toast.LENGTH_SHORT).show();
+                        showAddTaskDialog();
                         break;
                     case R.id.nav_all:
                         currentFilter = "All";
@@ -150,12 +172,23 @@ public class HomeActivity extends AppCompatActivity implements TaskItemAdapter.O
     }
 
     /**
-     * Populates the original task list with dummy data.
+     * Sets up the RecyclerView with a LinearLayoutManager.
+     */
+    private void setupRecyclerView() {
+        recyclerView = findViewById(R.id.task_recycler_view);
+        recyclerView.setLayoutManager(new LinearLayoutManager(this));
+    }
+
+    /**
+     * Populates the original task list by fetching data from the API.
      */
     private void populateDummyTasks() {
         // Clear existing tasks to avoid duplication
         originalTaskList.clear();
-        //we will read the database and the api using a helper class called dataRepository
+
+        // Execute the AsyncTask to fetch tasks from the API
+        String apiUrl = "https://mocki.io/v1/b00eafce-248d-4ef2-af82-16063a826fa6"; // Replace with your actual API URL
+        new ConnectionAsyncTask(this).execute(apiUrl);
     }
 
     /**
@@ -177,9 +210,6 @@ public class HomeActivity extends AppCompatActivity implements TaskItemAdapter.O
                     }
                 }
                 break;
-            case "All":
-                filteredTaskList.addAll(originalTaskList);
-                break;
             case "Completed":
                 for (Task task : originalTaskList) {
                     if (task.isCompleted()) {
@@ -199,21 +229,15 @@ public class HomeActivity extends AppCompatActivity implements TaskItemAdapter.O
     /**
      * Adds a new task to the original task list and refreshes the RecyclerView based on the current filter.
      */
-    private void addNewTask() {
-        // Example: Add a new task
-        Task newTask = new Task();
-        newTask.setTitle("New Task");
-        newTask.setDescription("Description of new task.");
-        newTask.setDueDate("2024-12-17 12:00 PM");
-        newTask.setPriority("Low");
-        newTask.setCompleted(false);
-        // newTask.setReminderSet(false); // Uncomment if needed
-        originalTaskList.add(newTask);
+    private void addNewTask(Task newTask) {
 
-        // Reapply the current filter to include the new task
+
+        originalTaskList.add(newTask);
         filterTasks(currentFilter);
 
         Toast.makeText(this, "New Task Added", Toast.LENGTH_SHORT).show();
+
+        // TODO: Implement persistent storage (e.g., save to database or API)
     }
 
     /**
@@ -248,5 +272,109 @@ public class HomeActivity extends AppCompatActivity implements TaskItemAdapter.O
         Toast.makeText(this, "Deleted Task: " + task.getTitle(), Toast.LENGTH_SHORT).show();
 
         // TODO: Implement deletion from database or persistent storage
+    }
+
+    /**
+     * Callback before the AsyncTask starts.
+     * Removed ProgressBar related code.
+     */
+    @Override
+    public void onPreExecute() {
+        // No ProgressBar functionality implemented
+    }
+
+    /**
+     * Callback when the AsyncTask successfully fetches and parses tasks.
+     *
+     * @param tasks The list of fetched tasks.
+     */
+    @Override
+    public void onSuccess(List<Task> tasks) {
+        if (tasks != null) {
+            originalTaskList.addAll(tasks);
+            filterTasks(currentFilter);
+        } else {
+            Toast.makeText(this, "Error fetching tasks", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    /**
+     * Callback when the AsyncTask encounters an error.
+     *
+     * @param errorMessage The error message to display.
+     */
+    @Override
+    public void onError(String errorMessage) {
+        Toast.makeText(this, errorMessage, Toast.LENGTH_LONG).show();
+    }
+
+    private void showAddTaskDialog() {
+        // Inflate the dialog layout
+        LayoutInflater inflater = LayoutInflater.from(this);
+        View dialogView = inflater.inflate(R.layout.add_task_layout, null);
+
+        // Initialize UI components within the dialog
+        EditText editTextTitle = dialogView.findViewById(R.id.edit_text_task_title);
+        EditText editTextDescription = dialogView.findViewById(R.id.edit_text_task_description);
+        EditText editTextDueDate = dialogView.findViewById(R.id.edit_text_task_due_date);
+        Spinner spinnerPriority = dialogView.findViewById(R.id.spinner_task_priority);
+        CheckBox checkBoxCompleted = dialogView.findViewById(R.id.checkbox_is_completed);
+        CheckBox checkBoxReminderSet = dialogView.findViewById(R.id.checkbox_is_reminder_set);
+
+        // Set up the Spinner for task priority
+        ArrayAdapter<CharSequence> adapter = ArrayAdapter.createFromResource(this,
+                R.array.priority_levels, android.R.layout.simple_spinner_item);
+        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        spinnerPriority.setAdapter(adapter);
+
+        // Build the AlertDialog
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setView(dialogView)
+                .setTitle("Add New Task")
+                .setPositiveButton("Add", null) // Set to null to override the onClick later
+                .setNegativeButton("Cancel", (dialog, which) -> dialog.dismiss());
+
+        // Create and show the AlertDialog
+        AlertDialog dialog = builder.create();
+        dialog.show();
+
+        // Override the Positive Button to prevent automatic dismissal on validation failure
+        dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(v -> {
+            String title = editTextTitle.getText().toString().trim();
+            String description = editTextDescription.getText().toString().trim();
+            String dueDate = editTextDueDate.getText().toString().trim();
+            String priority = spinnerPriority.getSelectedItem().toString();
+            boolean isCompleted = checkBoxCompleted.isChecked();
+            boolean isReminderSet = checkBoxReminderSet.isChecked();
+
+            // Validate inputs
+            if (title.isEmpty()) {
+                editTextTitle.setError("Title is required");
+                return;
+            }
+
+            if (dueDate.isEmpty()) {
+                editTextDueDate.setError("Due date is required");
+                return;
+            }
+
+            // Optionally, validate the due date format here
+
+//            // Create a new Task object
+            Task newTask = new Task(
+            );
+            newTask.setId(0);
+            newTask.setTitle(title);
+            newTask.setDescription(description);
+            newTask.setDueDate(dueDate);
+            newTask.setPriority(priority);
+            newTask.setCompleted(isCompleted);
+
+            // Add the new task to the list
+            addNewTask(newTask);
+
+            // Dismiss the dialog
+            dialog.dismiss();
+        });
     }
 }
