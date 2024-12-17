@@ -1,11 +1,14 @@
 package com.example.project1;
 
+import android.app.DatePickerDialog;
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.ArrayAdapter;
+import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.Spinner;
@@ -22,10 +25,12 @@ import androidx.drawerlayout.widget.DrawerLayout;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.android.material.navigation.NavigationView;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
@@ -44,6 +49,8 @@ public class HomeActivity extends AppCompatActivity implements TaskItemAdapter.O
     private NavigationView navigationView;
     private Toolbar toolbar;
     private ActionBarDrawerToggle toggle;
+
+    private FloatingActionButton floatingActionButton;
 
     // Data Lists
     private final List<Task> originalTaskList = new ArrayList<>();  // Holds all tasks
@@ -75,17 +82,16 @@ public class HomeActivity extends AppCompatActivity implements TaskItemAdapter.O
         taskItemAdapter = new TaskItemAdapter(this, filteredTaskList, this);
         recyclerView.setAdapter(taskItemAdapter);
 
-        // Populate tasks with data from the API
-        populateDummyTasks();
-
         // Set a default selection and apply the filter
         if (savedInstanceState == null) {
             navigationView.setCheckedItem(R.id.nav_today);
             filterTasks(currentFilter);
+            // Set the title of the activity
+            setTitle(navigationView.getMenu().findItem(R.id.nav_today).getTitle());
         }
 
-        // Set the title of the activity
-        setTitle("Home");
+
+        floatingActionButton.setOnClickListener(v -> populateDummyTasks());
     }
 
     /**
@@ -104,6 +110,9 @@ public class HomeActivity extends AppCompatActivity implements TaskItemAdapter.O
                 this, drawerLayout, toolbar, R.string.open_drawer, R.string.close_drawer);
         drawerLayout.addDrawerListener(toggle);
         toggle.syncState();
+
+        //initialize the fab
+        floatingActionButton = findViewById(R.id.floatingActionButton2);
 
         // Initialize NavigationView
         navigationView = findViewById(R.id.navigation_view);
@@ -158,7 +167,7 @@ public class HomeActivity extends AppCompatActivity implements TaskItemAdapter.O
                     case R.id.nav_logout:
                         // Implement Logout functionality
                         Toast.makeText(HomeActivity.this, "Logout clicked", Toast.LENGTH_SHORT).show();
-                        // TODO: Perform logout and redirect to Sign-In Activity
+                        logOut();
                         break;
                     default:
                         break;
@@ -189,6 +198,14 @@ public class HomeActivity extends AppCompatActivity implements TaskItemAdapter.O
         // Execute the AsyncTask to fetch tasks from the API
         String apiUrl = "https://mocki.io/v1/b00eafce-248d-4ef2-af82-16063a826fa6"; // Replace with your actual API URL
         new ConnectionAsyncTask(this).execute(apiUrl);
+    }
+
+
+    private void logOut(){
+        //wer only clear the current user information here
+        Intent intent = new Intent(HomeActivity.this, LoginActivity.class);
+        startActivity(intent);
+        finish();
     }
 
     /**
@@ -237,7 +254,7 @@ public class HomeActivity extends AppCompatActivity implements TaskItemAdapter.O
 
         Toast.makeText(this, "New Task Added", Toast.LENGTH_SHORT).show();
 
-        // TODO: Implement persistent storage (e.g., save to database or API)
+        // TODO: Implement persistent storage (e.g., save to database)
     }
 
     /**
@@ -307,9 +324,8 @@ public class HomeActivity extends AppCompatActivity implements TaskItemAdapter.O
     public void onError(String errorMessage) {
         Toast.makeText(this, errorMessage, Toast.LENGTH_LONG).show();
     }
-
     private void showAddTaskDialog() {
-        // Inflate the dialog layout
+        // Inflate the custom dialog layout
         LayoutInflater inflater = LayoutInflater.from(this);
         View dialogView = inflater.inflate(R.layout.add_task_layout, null);
 
@@ -320,6 +336,8 @@ public class HomeActivity extends AppCompatActivity implements TaskItemAdapter.O
         Spinner spinnerPriority = dialogView.findViewById(R.id.spinner_task_priority);
         CheckBox checkBoxCompleted = dialogView.findViewById(R.id.checkbox_is_completed);
         CheckBox checkBoxReminderSet = dialogView.findViewById(R.id.checkbox_is_reminder_set);
+        Button buttonAddTask = dialogView.findViewById(R.id.button_add_task);
+        Button buttonCancel = dialogView.findViewById(R.id.button_cancel);
 
         // Set up the Spinner for task priority
         ArrayAdapter<CharSequence> adapter = ArrayAdapter.createFromResource(this,
@@ -327,19 +345,20 @@ public class HomeActivity extends AppCompatActivity implements TaskItemAdapter.O
         adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         spinnerPriority.setAdapter(adapter);
 
-        // Build the AlertDialog
+        // Optional: Set a DatePickerDialog when due date EditText is clicked
+        editTextDueDate.setOnClickListener(v -> showDatePickerDialog(editTextDueDate));
+
+        // Build the AlertDialog without title and default buttons
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        builder.setView(dialogView)
-                .setTitle("Add New Task")
-                .setPositiveButton("Add", null) // Set to null to override the onClick later
-                .setNegativeButton("Cancel", (dialog, which) -> dialog.dismiss());
+        builder.setView(dialogView);
+        // Do not set a title or buttons here
 
         // Create and show the AlertDialog
         AlertDialog dialog = builder.create();
         dialog.show();
 
-        // Override the Positive Button to prevent automatic dismissal on validation failure
-        dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(v -> {
+        // Handle the "Add" button click
+        buttonAddTask.setOnClickListener(v -> {
             String title = editTextTitle.getText().toString().trim();
             String description = editTextDescription.getText().toString().trim();
             String dueDate = editTextDueDate.getText().toString().trim();
@@ -350,31 +369,82 @@ public class HomeActivity extends AppCompatActivity implements TaskItemAdapter.O
             // Validate inputs
             if (title.isEmpty()) {
                 editTextTitle.setError("Title is required");
+                editTextTitle.requestFocus();
                 return;
             }
 
             if (dueDate.isEmpty()) {
                 editTextDueDate.setError("Due date is required");
+                editTextDueDate.requestFocus();
                 return;
             }
 
-            // Optionally, validate the due date format here
+            // Optional: Validate the due date format here
+            if (!isValidDate(dueDate)) {
+                editTextDueDate.setError("Invalid date format. Use YYYY-MM-DD");
+                editTextDueDate.requestFocus();
+                return;
+            }
 
-//            // Create a new Task object
-            Task newTask = new Task(
-            );
-            newTask.setId(0);
+            // Create a new Task object
+            Task newTask = new Task();
+
             newTask.setTitle(title);
             newTask.setDescription(description);
             newTask.setDueDate(dueDate);
             newTask.setPriority(priority);
             newTask.setCompleted(isCompleted);
-
             // Add the new task to the list
             addNewTask(newTask);
 
             // Dismiss the dialog
             dialog.dismiss();
         });
+
+        // Handle the "Cancel" button click
+        buttonCancel.setOnClickListener(v -> dialog.dismiss());
     }
+
+    /**
+     * Shows a DatePickerDialog and sets the selected date to the provided EditText.
+     *
+     * @param editTextDueDate The EditText to set the selected date.
+     */
+    private void showDatePickerDialog(EditText editTextDueDate) {
+        // Get current date
+        final Calendar calendar = Calendar.getInstance();
+        int year = calendar.get(Calendar.YEAR);
+        int month = calendar.get(Calendar.MONTH);
+        int day = calendar.get(Calendar.DAY_OF_MONTH);
+
+        // Create DatePickerDialog
+        DatePickerDialog datePickerDialog = new DatePickerDialog(this,
+                (view, selectedYear, selectedMonth, selectedDay) -> {
+                    // Format the date as YYYY-MM-DD
+                    String formattedDate = String.format(Locale.getDefault(), "%04d-%02d-%02d",
+                            selectedYear, selectedMonth + 1, selectedDay);
+                    editTextDueDate.setText(formattedDate);
+                }, year, month, day);
+
+        datePickerDialog.show();
+    }
+
+    /**
+     * Validates the date format to ensure it matches YYYY-MM-DD.
+     *
+     * @param date The date string to validate.
+     * @return True if valid, false otherwise.
+     */
+    private boolean isValidDate(String date) {
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());
+        sdf.setLenient(false);
+        try {
+            Date parsedDate = sdf.parse(date);
+            return parsedDate != null;
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+
 }

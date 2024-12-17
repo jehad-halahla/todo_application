@@ -12,14 +12,33 @@ import androidx.cardview.widget.CardView;
 
 import com.example.project1.R;
 
+import java.io.Serializable;
+
 public class TaskItemFragment extends Fragment {
 
     private TextView taskTitle, taskDescription, taskDueDate, taskPriority, taskStatus;
     private ImageView taskReminderIcon, taskEdit, taskDelete;
-
+    //the task to display
+    private Task task;
     public TaskItemFragment() {
         // Required empty public constructor
     }
+
+    public static TaskItemFragment newInstance(Task task) {
+        TaskItemFragment fragment = new TaskItemFragment();
+        Bundle args = new Bundle();
+        args.putSerializable("task", (Serializable) task);  // Pass the task object
+        fragment.setArguments(args);
+        return fragment;
+    }
+
+    public void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        if (getArguments() != null) {
+            task = (Task) getArguments().getSerializable("task");
+        }
+    }
+
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,

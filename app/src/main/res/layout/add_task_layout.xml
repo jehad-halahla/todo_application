@@ -2,52 +2,91 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:gravity="center"
     android:orientation="vertical"
-    android:padding="24dp">
+    android:padding="24dp"
+    android:background="@drawable/gradiant_background"
+    >
 
-    <EditText
-        android:id="@+id/edit_text_task_title"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="16dp"
-        android:hint="Task Title"
-        android:inputType="textPersonName" />
+    <!-- Task Title Input -->
+<EditText
+android:id="@+id/edit_text_task_title"
+android:layout_width="match_parent"
+android:layout_height="wrap_content"
+android:hint="Task Title"
+android:inputType="textPersonName"
+android:drawableStart="@android:drawable/ic_input_add"
+android:padding="10dp" />
 
-    <EditText
-        android:id="@+id/edit_text_task_description"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="8dp"
-        android:hint="Task Description"
-        android:inputType="textMultiLine" />
+    <!-- Task Description Input -->
+<EditText
+android:id="@+id/edit_text_task_description"
+android:layout_width="match_parent"
+android:layout_height="wrap_content"
+android:hint="Task Description"
+android:inputType="textMultiLine"
+android:padding="10dp"
+android:layout_marginTop="8dp" />
 
-    <EditText
-        android:id="@+id/edit_text_task_due_date"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="8dp"
-        android:hint="Due Date (YYYY-MM-DD)"
-        android:inputType="date" />
+    <!-- Due Date Input -->
+<EditText
+android:id="@+id/edit_text_task_due_date"
+android:layout_width="match_parent"
+android:layout_height="wrap_content"
+android:hint="Due Date (YYYY-MM-DD)"
+android:inputType="date"
+android:padding="10dp"
+android:layout_marginTop="8dp"
+android:focusable="false"
+android:clickable="true" />
 
-    <Spinner
-        android:id="@+id/spinner_task_priority"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="8dp" />
+    <!-- Priority Spinner -->
+<Spinner
+android:id="@+id/spinner_task_priority"
+android:layout_width="match_parent"
+android:layout_height="wrap_content"
+android:layout_marginTop="8dp" />
 
-    <CheckBox
-        android:id="@+id/checkbox_is_completed"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="12dp"
-        android:text="Completed" />
+    <!-- Completed Checkbox -->
+<CheckBox
+android:id="@+id/checkbox_is_completed"
+android:layout_width="wrap_content"
+android:layout_height="wrap_content"
+android:text="Completed"
+android:layout_marginTop="12dp" />
 
-    <CheckBox
-        android:id="@+id/checkbox_is_reminder_set"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="4dp"
-        android:text="Set Reminder" />
+    <!-- Reminder Set Checkbox -->
+<CheckBox
+android:id="@+id/checkbox_is_reminder_set"
+android:layout_width="wrap_content"
+android:layout_height="wrap_content"
+android:text="Set Reminder"
+android:layout_marginTop="4dp" />
+
+    <!-- Buttons Layout -->
+<LinearLayout
+android:layout_width="match_parent"
+android:layout_height="wrap_content"
+android:orientation="horizontal"
+android:gravity="end"
+android:layout_marginTop="16dp">
+
+<Button
+    android:id="@+id/button_cancel"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:text="Cancel"
+    android:background="@color/cardview_shadow_end_color"
+    android:textColor="@android:color/white"
+    android:layout_marginEnd="8dp" />
+
+<Button
+    android:id="@+id/button_add_task"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:text="Add"
+    android:background="@color/cardview_shadow_start_color"
+    android:textColor="@android:color/white" />
 
 </LinearLayout>
+
+    </LinearLayout>

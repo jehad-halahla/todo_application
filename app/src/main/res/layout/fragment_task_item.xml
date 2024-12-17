@@ -5,14 +5,16 @@
     android:id="@+id/task_item_card"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:layout_margin="8dp"
+    android:layout_marginHorizontal="16dp"
+    android:layout_marginTop="8dp"
+    android:layout_marginBottom="8dp"
     app:cardCornerRadius="8dp"
     app:cardElevation="4dp">
 
     <LinearLayout
-        android:orientation="vertical"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
+        android:orientation="vertical"
         android:padding="16dp">
 
         <!-- Task Title -->
@@ -29,68 +31,68 @@
             android:id="@+id/task_description"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
             android:text="Task Description"
-            android:textSize="14sp"
-            android:layout_marginTop="4dp" />
+            android:textSize="14sp" />
 
         <!-- Due Date and Time -->
         <TextView
             android:id="@+id/task_due_date"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
             android:text="Due: 2024-12-31 10:00 AM"
-            android:textSize="14sp"
-            android:layout_marginTop="4dp" />
+            android:textSize="14sp" />
 
         <!-- Priority Level -->
         <TextView
             android:id="@+id/task_priority"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
             android:text="Priority: High"
-            android:textSize="14sp"
-            android:layout_marginTop="4dp" />
+            android:textSize="14sp" />
 
         <!-- Completion Status -->
         <TextView
             android:id="@+id/task_status"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
             android:text="Status: Incomplete"
-            android:textSize="14sp"
-            android:layout_marginTop="4dp" />
+            android:textSize="14sp" />
 
         <!-- Reminder Icon -->
         <ImageView
             android:id="@+id/task_reminder_icon"
             android:layout_width="24dp"
             android:layout_height="24dp"
-            android:src="@drawable/ic_baseline_notification_add_24"
+            android:layout_marginTop="8dp"
             android:contentDescription="Reminder Icon"
-            android:layout_marginTop="8dp" />
+            android:src="@drawable/ic_baseline_notification_add_24" />
 
         <!-- Action Icons (Edit, Delete) -->
         <LinearLayout
-            android:orientation="horizontal"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
-            android:gravity="end">
+            android:gravity="end"
+            android:orientation="horizontal">
 
             <ImageView
                 android:id="@+id/task_edit"
                 android:layout_width="24dp"
                 android:layout_height="24dp"
-                android:src="@drawable/ic_baseline_edit_36"
-                android:contentDescription="Edit Task" />
+                android:contentDescription="Edit Task"
+                android:src="@drawable/ic_baseline_edit_36" />
 
             <ImageView
                 android:id="@+id/task_delete"
                 android:layout_width="24dp"
                 android:layout_height="24dp"
-                android:src="@drawable/ic_baseline_delete_36"
+                android:layout_marginStart="16dp"
                 android:contentDescription="Delete Task"
-                android:layout_marginStart="16dp" />
+                android:src="@drawable/ic_baseline_delete_36" />
         </LinearLayout>
     </LinearLayout>
 
