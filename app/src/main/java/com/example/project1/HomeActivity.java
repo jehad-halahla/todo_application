@@ -12,8 +12,8 @@ import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.Spinner;
-import android.widget.TextView;
 import android.widget.Toast;
+import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.ActionBarDrawerToggle;
@@ -22,29 +22,30 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
 import androidx.core.view.GravityCompat;
 import androidx.drawerlayout.widget.DrawerLayout;
-import androidx.recyclerview.widget.LinearLayoutManager;
-import androidx.recyclerview.widget.RecyclerView;
+import androidx.fragment.app.Fragment;
+import androidx.fragment.app.FragmentManager;
 
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.android.material.navigation.NavigationView;
 
+import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
+
 /**
- * HomeActivity manages the main screen with a navigation drawer and a RecyclerView to display tasks.
+ * HomeActivity manages the main screen with a navigation drawer and Fragments to display tasks.
  */
-public class HomeActivity extends AppCompatActivity implements TaskItemAdapter.OnItemClickListener, ConnectionAsyncTask.TaskListener {
+public class HomeActivity extends AppCompatActivity implements ConnectionAsyncTask.TaskListener {
 
     // Local variables to store the user's name and email
     private String userName;
     private String userEmail;
 
     // UI Components
-    private RecyclerView recyclerView;
     private DrawerLayout drawerLayout;
     private NavigationView navigationView;
     private Toolbar toolbar;
@@ -54,13 +55,6 @@ public class HomeActivity extends AppCompatActivity implements TaskItemAdapter.O
 
     // Data Lists
     private final List<Task> originalTaskList = new ArrayList<>();  // Holds all tasks
-    private final List<Task> filteredTaskList = new ArrayList<>();  // Holds filtered tasks
-
-    // Adapter
-    private TaskItemAdapter taskItemAdapter;
-
-    // Current filter
-    private String currentFilter = "Today"; // Default filter
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -75,23 +69,16 @@ public class HomeActivity extends AppCompatActivity implements TaskItemAdapter.O
         // Initialize UI components
         initializeUIComponents();
 
-        // Set up the RecyclerView
-        setupRecyclerView();
-
-        // Initialize the adapter with the filtered task list
-        taskItemAdapter = new TaskItemAdapter(this, filteredTaskList, this);
-        recyclerView.setAdapter(taskItemAdapter);
-
-        // Set a default selection and apply the filter
+        // Set default fragment
         if (savedInstanceState == null) {
             navigationView.setCheckedItem(R.id.nav_today);
-            filterTasks(currentFilter);
-            // Set the title of the activity
+            loadFragment(TodayTasksFragment.newInstance());
             setTitle(navigationView.getMenu().findItem(R.id.nav_today).getTitle());
         }
 
+        // Set FloatingActionButton click listener to add a new task
+        floatingActionButton.setOnClickListener(v -> populateTasks());
 
-        floatingActionButton.setOnClickListener(v -> populateDummyTasks());
     }
 
     /**
@@ -111,7 +98,7 @@ public class HomeActivity extends AppCompatActivity implements TaskItemAdapter.O
         drawerLayout.addDrawerListener(toggle);
         toggle.syncState();
 
-        //initialize the fab
+        // Initialize FloatingActionButton
         floatingActionButton = findViewById(R.id.floatingActionButton2);
 
         // Initialize NavigationView
@@ -129,30 +116,33 @@ public class HomeActivity extends AppCompatActivity implements TaskItemAdapter.O
     }
 
     /**
-     * Sets up the NavigationView's item selection listener.
+     * Sets up the NavigationView's item selection listener to load appropriate Fragments.
      */
     private void setupNavigationView() {
         navigationView.setNavigationItemSelectedListener(new NavigationView.OnNavigationItemSelectedListener() {
             @Override
             public boolean onNavigationItemSelected(@NonNull MenuItem menuItem) {
-                // Handle navigation view item clicks here.
+                Fragment selectedFragment = null;
+                String filterTitle = "";
+
                 switch (menuItem.getItemId()) {
                     case R.id.nav_today:
-                        currentFilter = "Today";
-                        filterTasks(currentFilter);
+                        selectedFragment = TodayTasksFragment.newInstance();
+                        filterTitle = getString(R.string.nav_today);
                         break;
                     case R.id.nav_new_task:
                         // Implement New Task functionality
                         Toast.makeText(HomeActivity.this, "New Task clicked", Toast.LENGTH_SHORT).show();
                         showAddTaskDialog();
-                        break;
+                        drawerLayout.closeDrawer(GravityCompat.START);
+                        return true; // Early return since we're not loading a fragment
                     case R.id.nav_all:
-                        currentFilter = "All";
-                        filterTasks(currentFilter);
+                        selectedFragment = AllTasksFragment.newInstance();
+                        filterTitle = getString(R.string.nav_all);
                         break;
                     case R.id.nav_completed:
-                        currentFilter = "Completed";
-                        filterTasks(currentFilter);
+                        selectedFragment = CompletedTasksFragment.newInstance();
+                        filterTitle = getString(R.string.nav_completed);
                         break;
                     case R.id.nav_search:
                         // Implement Search functionality
@@ -173,6 +163,11 @@ public class HomeActivity extends AppCompatActivity implements TaskItemAdapter.O
                         break;
                 }
 
+                if (selectedFragment != null) {
+                    loadFragment(selectedFragment);
+                    setTitle(filterTitle);
+                }
+
                 // Close the drawer after selection
                 drawerLayout.closeDrawer(GravityCompat.START);
                 return true;
@@ -181,17 +176,21 @@ public class HomeActivity extends AppCompatActivity implements TaskItemAdapter.O
     }
 
     /**
-     * Sets up the RecyclerView with a LinearLayoutManager.
+     * Loads the specified Fragment into the fragment container.
+     *
+     * @param fragment The Fragment to load.
      */
-    private void setupRecyclerView() {
-        recyclerView = findViewById(R.id.task_recycler_view);
-        recyclerView.setLayoutManager(new LinearLayoutManager(this));
+    private void loadFragment(Fragment fragment) {
+        FragmentManager fragmentManager = getSupportFragmentManager();
+        fragmentManager.beginTransaction()
+                .replace(R.id.fragment_container, fragment)
+                .commit();
     }
 
     /**
-     * Populates the original task list by fetching data from the API.
+     * Populates the original task list by fetching data from the API or local storage.
      */
-    private void populateDummyTasks() {
+    private void populateTasks() {
         // Clear existing tasks to avoid duplication
         originalTaskList.clear();
 
@@ -200,104 +199,26 @@ public class HomeActivity extends AppCompatActivity implements TaskItemAdapter.O
         new ConnectionAsyncTask(this).execute(apiUrl);
     }
 
-
+    /**
+     * Handles the logout functionality by clearing user data and navigating to LoginActivity.
+     */
     private void logOut(){
-        //wer only clear the current user information here
+        // Clear user information from SharedPreferences
+        SharedPreferences sharedPreferences = getSharedPreferences("LoginPrefs", MODE_PRIVATE);
+        SharedPreferences.Editor editor = sharedPreferences.edit();
+        editor.clear();
+        editor.apply();
+
+        // Navigate to LoginActivity and clear the back stack
         Intent intent = new Intent(HomeActivity.this, LoginActivity.class);
+        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
         startActivity(intent);
         finish();
     }
 
-    /**
-     * Filters the tasks based on the selected option and updates the RecyclerView.
-     *
-     * @param filter The filter criteria ("Today", "All", "Completed")
-     */
-    private void filterTasks(String filter) {
-        filteredTaskList.clear();
-
-        switch (filter) {
-            case "Today":
-                // Get today's date dynamically
-                SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());
-                String todayDate = sdf.format(new Date());
-                for (Task task : originalTaskList) {
-                    if (task.getDueDate().startsWith(todayDate)) {
-                        filteredTaskList.add(task);
-                    }
-                }
-                break;
-            case "Completed":
-                for (Task task : originalTaskList) {
-                    if (task.isCompleted()) {
-                        filteredTaskList.add(task);
-                    }
-                }
-                break;
-            default:
-                filteredTaskList.addAll(originalTaskList);
-                break;
-        }
-
-        // Notify the adapter to refresh the RecyclerView
-        taskItemAdapter.updateList(filteredTaskList);
-    }
-
-    /**
-     * Adds a new task to the original task list and refreshes the RecyclerView based on the current filter.
-     */
-    private void addNewTask(Task newTask) {
-
-
-        originalTaskList.add(newTask);
-        filterTasks(currentFilter);
-
-        Toast.makeText(this, "New Task Added", Toast.LENGTH_SHORT).show();
-
-        // TODO: Implement persistent storage (e.g., save to database)
-    }
-
-    /**
-     * Handles the edit action for a task.
-     *
-     * @param position The position of the task in the filtered list.
-     */
-    @Override
-    public void onEditClick(int position) {
-        // Retrieve the task from the filtered list
-        Task task = filteredTaskList.get(position);
-        Toast.makeText(this, "Edit Task: " + task.getTitle(), Toast.LENGTH_SHORT).show();
-        // TODO: Implement editing functionality (e.g., open a dialog or new activity)
-    }
-
-    /**
-     * Handles the delete action for a task.
-     *
-     * @param position The position of the task in the filtered list.
-     */
-    @Override
-    public void onDeleteClick(int position) {
-        // Retrieve the task from the filtered list
-        Task task = filteredTaskList.get(position);
-
-        // Remove the task from the original list
-        originalTaskList.remove(task);
-
-        // Reapply the current filter to update the RecyclerView
-        filterTasks(currentFilter);
-
-        Toast.makeText(this, "Deleted Task: " + task.getTitle(), Toast.LENGTH_SHORT).show();
-
-        // TODO: Implement deletion from database or persistent storage
-    }
-
-    /**
-     * Callback before the AsyncTask starts.
-     * Removed ProgressBar related code.
-     */
     @Override
     public void onPreExecute() {
-        // No ProgressBar functionality implemented
+        // Optionally, show a ProgressBar or loading indicator here
     }
 
     /**
@@ -309,7 +230,8 @@ public class HomeActivity extends AppCompatActivity implements TaskItemAdapter.O
     public void onSuccess(List<Task> tasks) {
         if (tasks != null) {
             originalTaskList.addAll(tasks);
-            filterTasks(currentFilter);
+            // Notify active Fragments to refresh their data
+            notifyFragmentsDataChanged();
         } else {
             Toast.makeText(this, "Error fetching tasks", Toast.LENGTH_SHORT).show();
         }
@@ -324,6 +246,50 @@ public class HomeActivity extends AppCompatActivity implements TaskItemAdapter.O
     public void onError(String errorMessage) {
         Toast.makeText(this, errorMessage, Toast.LENGTH_LONG).show();
     }
+
+    /**
+     * Adds a new task to the original task list and notifies Fragments to refresh.
+     *
+     * @param newTask The Task object to add.
+     */
+    private void addNewTask(Task newTask) {
+        originalTaskList.add(newTask);
+        notifyFragmentsDataChanged();
+        Toast.makeText(this, "New Task Added", Toast.LENGTH_SHORT).show();
+
+        // TODO: Implement persistent storage (e.g., save to database)
+    }
+
+    /**
+     * Handles the deletion of a task from the original task list and notifies Fragments.
+     *
+     * @param task The Task object to delete.
+     */
+    public void deleteTask(Task task) {
+        originalTaskList.remove(task);
+        notifyFragmentsDataChanged();
+        Toast.makeText(this, "Deleted Task: " + task.getTitle(), Toast.LENGTH_SHORT).show();
+
+        // TODO: Implement deletion from persistent storage (e.g., remove from database)
+    }
+
+    /**
+     * Notifies all active Fragments to refresh their task lists.
+     */
+    private void notifyFragmentsDataChanged() {
+        FragmentManager fragmentManager = getSupportFragmentManager();
+        List<Fragment> fragments = fragmentManager.getFragments();
+
+        for (Fragment fragment : fragments) {
+            if (fragment instanceof BaseTaskFragment) {
+                ((BaseTaskFragment) fragment).refreshTasks();
+            }
+        }
+    }
+
+    /**
+     * Shows a dialog to add a new task.
+     */
     private void showAddTaskDialog() {
         // Inflate the custom dialog layout
         LayoutInflater inflater = LayoutInflater.from(this);
@@ -345,13 +311,12 @@ public class HomeActivity extends AppCompatActivity implements TaskItemAdapter.O
         adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         spinnerPriority.setAdapter(adapter);
 
-        // Optional: Set a DatePickerDialog when due date EditText is clicked
+        // Set a DatePickerDialog when due date EditText is clicked
         editTextDueDate.setOnClickListener(v -> showDatePickerDialog(editTextDueDate));
 
         // Build the AlertDialog without title and default buttons
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
         builder.setView(dialogView);
-        // Do not set a title or buttons here
 
         // Create and show the AlertDialog
         AlertDialog dialog = builder.create();
@@ -379,7 +344,7 @@ public class HomeActivity extends AppCompatActivity implements TaskItemAdapter.O
                 return;
             }
 
-            // Optional: Validate the due date format here
+            // Validate the due date format
             if (!isValidDate(dueDate)) {
                 editTextDueDate.setError("Invalid date format. Use YYYY-MM-DD");
                 editTextDueDate.requestFocus();
@@ -388,12 +353,13 @@ public class HomeActivity extends AppCompatActivity implements TaskItemAdapter.O
 
             // Create a new Task object
             Task newTask = new Task();
-
             newTask.setTitle(title);
             newTask.setDescription(description);
             newTask.setDueDate(dueDate);
             newTask.setPriority(priority);
             newTask.setCompleted(isCompleted);
+//            newTask.setReminderSet(isReminderSet);
+
             // Add the new task to the list
             addNewTask(newTask);
 
@@ -441,10 +407,54 @@ public class HomeActivity extends AppCompatActivity implements TaskItemAdapter.O
         try {
             Date parsedDate = sdf.parse(date);
             return parsedDate != null;
-        } catch (Exception e) {
+        } catch (ParseException e) {
             return false;
         }
     }
 
+    /**
+     * Public method to retrieve the original task list.
+     *
+     * @return The list of all tasks.
+     */
+    public List<Task> getOriginalTaskList() {
+        return originalTaskList;
+    }
+
+    /**
+     * Retrieves a filtered list of tasks based on the provided filter criteria.
+     *
+     * @param filter The filter criteria ("Today", "All", "Completed")
+     * @return A list of tasks matching the filter.
+     */
+    public List<Task> getFilteredTaskList(String filter) {
+        List<Task> filteredList = new ArrayList<>();
+
+        switch (filter) {
+            case "Today":
+                // Get today's date dynamically
+                SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());
+                String todayDate = sdf.format(new Date());
+                for (Task task : originalTaskList) {
+                    if (task.getDueDate().startsWith(todayDate)) {
+                        filteredList.add(task);
+                    }
+                }
+                break;
+            case "Completed":
+                for (Task task : originalTaskList) {
+                    if (task.isCompleted()) {
+                        filteredList.add(task);
+                    }
+                }
+                break;
+            case "All":
+            default:
+                filteredList.addAll(originalTaskList);
+                break;
+        }
+
+        return filteredList;
+    }
 
 }

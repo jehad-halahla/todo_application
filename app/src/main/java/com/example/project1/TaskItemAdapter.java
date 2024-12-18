@@ -29,8 +29,9 @@ public class TaskItemAdapter extends RecyclerView.Adapter<TaskItemAdapter.TaskVi
      * Interface for handling edit and delete actions on Task items.
      */
     public interface OnItemClickListener {
-        void onEditClick(int position);
-        void onDeleteClick(int position);
+        void onEditClick(Task task);
+        void onDeleteClick(Task task);
+        void onEmailClick(Task task);
     }
 
     /**
@@ -52,6 +53,7 @@ public class TaskItemAdapter extends RecyclerView.Adapter<TaskItemAdapter.TaskVi
     @NonNull
     @Override
     public TaskViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
+        // Inflate the task item layout
         View view = LayoutInflater.from(context).inflate(R.layout.fragment_task_item, parent, false);
         return new TaskViewHolder(view, listener);
     }
@@ -96,6 +98,9 @@ public class TaskItemAdapter extends RecyclerView.Adapter<TaskItemAdapter.TaskVi
         private final ImageView taskReminderIcon;
         private final ImageView taskEdit;
         private final ImageView taskDelete;
+        private final ImageView taskEmail;
+
+        private Task currentTask;
 
         /**
          * Constructor for TaskViewHolder.
@@ -115,6 +120,7 @@ public class TaskItemAdapter extends RecyclerView.Adapter<TaskItemAdapter.TaskVi
             taskReminderIcon = itemView.findViewById(R.id.task_reminder_icon);
             taskEdit = itemView.findViewById(R.id.task_edit);
             taskDelete = itemView.findViewById(R.id.task_delete);
+            taskEmail = itemView.findViewById(R.id.task_email);
 
             // Set up click listeners for edit and delete actions
             setupClickListeners(listener);
@@ -126,6 +132,7 @@ public class TaskItemAdapter extends RecyclerView.Adapter<TaskItemAdapter.TaskVi
          * @param task the Task to bind
          */
         public void bind(Task task) {
+            currentTask = task;
             taskTitle.setText(task.getTitle());
             taskDescription.setText(task.getDescription());
             taskDueDate.setText("Due: " + task.getDueDate());
@@ -143,8 +150,8 @@ public class TaskItemAdapter extends RecyclerView.Adapter<TaskItemAdapter.TaskVi
             taskEdit.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
-                    if (listener != null && getAdapterPosition() != RecyclerView.NO_POSITION) {
-                        listener.onEditClick(getAdapterPosition());
+                    if (listener != null && currentTask != null) {
+                        listener.onEditClick(currentTask);
                     }
                 }
             });
@@ -152,11 +159,21 @@ public class TaskItemAdapter extends RecyclerView.Adapter<TaskItemAdapter.TaskVi
             taskDelete.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
-                    if (listener != null && getAdapterPosition() != RecyclerView.NO_POSITION) {
-                        listener.onDeleteClick(getAdapterPosition());
+                    if (listener != null && currentTask != null) {
+                        listener.onDeleteClick(currentTask);
                     }
                 }
             });
+            taskEmail.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    if (listener != null && currentTask != null) {
+                        listener.onEmailClick(currentTask);
+                    }
+                }
+            });
+
+            }
         }
     }
-}
+

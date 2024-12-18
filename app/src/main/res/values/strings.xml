@@ -21,5 +21,13 @@
         <item>High</item>
     </string-array>
 
+    <string name="nav_today">Today</string>
+    <string name="nav_all">All</string>
+    <string name="nav_completed">Completed</string>
+    <string name="nav_search">Search</string>
+    <string name="nav_profile">Profile</string>
+    <string name="nav_logout">Logout</string>
+    <string name="add_task">Add Task</string>
+
 
 </resources>

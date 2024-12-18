@@ -93,6 +93,14 @@
                 android:layout_marginStart="16dp"
                 android:contentDescription="Delete Task"
                 android:src="@drawable/ic_baseline_delete_36" />
+
+            <ImageView
+                android:id="@+id/task_email"
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:layout_marginStart="16dp"
+                android:contentDescription="email task to someone"
+                android:src="@drawable/baseline_email_24" />
         </LinearLayout>
     </LinearLayout>
 
