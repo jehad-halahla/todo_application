@@ -9,8 +9,6 @@ import androidx.annotation.Nullable;
 public class AllTasksFragment extends BaseTaskFragment {
 
 
-
-
     public AllTasksFragment() {
         // Required empty public constructor
     }

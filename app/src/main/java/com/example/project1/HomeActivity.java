@@ -7,6 +7,7 @@ import android.database.Cursor;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.LayoutInflater;
+import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.ArrayAdapter;
@@ -117,6 +118,7 @@ public class HomeActivity extends AppCompatActivity implements ConnectionAsyncTa
         // Initialize Toolbar
         toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
+
 
         // Initialize DrawerLayout
         drawerLayout = findViewById(R.id.drawer_layout);
@@ -516,5 +518,24 @@ public class HomeActivity extends AppCompatActivity implements ConnectionAsyncTa
 
         return filteredList;
     }
+    @Override
+    public boolean onCreateOptionsMenu(android.view.Menu menu) {
+        MenuInflater inflater = getMenuInflater();
+        inflater.inflate(R.menu.tool_bar_menu, menu); // Inflate the menu; this adds items to the action bar if it is present.
+        return true;
+    }
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        // Handle item selection
+        switch (item.getItemId()) {
+            case R.id.action_search:
+                // Show toast message when search icon is clicked
+                Toast.makeText(this, "Search icon clicked!", Toast.LENGTH_SHORT).show();
+                return true;
+            default:
+                return super.onOptionsItemSelected(item);
+        }
+    }
+
 
 }
