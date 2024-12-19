@@ -36,8 +36,10 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Set;
 
 /**
  * HomeActivity manages the main screen with a navigation drawer and Fragments to display tasks.
@@ -87,28 +89,9 @@ public class HomeActivity extends AppCompatActivity implements ConnectionAsyncTa
         floatingActionButton.setOnClickListener(v -> populateTasks());
         //read the tasks from the database
         dbHelper = DatabaseHelper.getInstance(this);
-        Cursor cursor_1 = dbHelper.getTasksByUser(userEmail);
-        //also load completed tasks into the original task list
-        if (cursor_1 != null) {
-            while (cursor_1.moveToNext()) {
-                //read the tasks from the database
-                String title = cursor_1.getString(cursor_1.getColumnIndexOrThrow("Title"));
-                String description = cursor_1.getString(cursor_1.getColumnIndexOrThrow("Description"));
-                String dueDate = cursor_1.getString(cursor_1.getColumnIndexOrThrow("DueDate"));
-                String dueTime = cursor_1.getString(cursor_1.getColumnIndexOrThrow("DueTime"));
-                String priority = cursor_1.getString(cursor_1.getColumnIndexOrThrow("Priority"));
-                boolean isCompleted = cursor_1.getInt(cursor_1.getColumnIndexOrThrow("IsCompleted")) == 1;
-                Task task = new Task();
-                task.setTitle(title);
-                task.setDescription(description);
-                task.setDueDate(dueDate);
-                task.setDueTime(dueTime);
-                task.setPriority(priority);
-                task.setCompleted(isCompleted);
-                originalTaskList.add(task);
-            }
-        }
-
+        //read the tasks from the database
+        loadDatabase();
+//        dbHelper.deleteTasksByUser(userEmail);
     }
 
     /**
@@ -222,14 +205,14 @@ public class HomeActivity extends AppCompatActivity implements ConnectionAsyncTa
      */
     private void populateTasks() {
         Log.d("HomeActivity", "populateTasks called");
-        // Clear existing tasks to avoid duplication
-        originalTaskList.clear();
         // Execute the AsyncTask to fetch tasks from the API
         String apiUrl = "https://mocki.io/v1/12cf4ca9-ef06-47ce-b2ef-68671e5bf9db"; // Replace with your actual API URL
         new ConnectionAsyncTask(this).execute(apiUrl);
         //add the tasks to the database
 
     }
+
+
 
     /**
      * Handles the logout functionality by clearing user data and navigating to LoginActivity.
@@ -243,7 +226,7 @@ public class HomeActivity extends AppCompatActivity implements ConnectionAsyncTa
 
         // Navigate to LoginActivity and clear the back stack
         Intent intent = new Intent(HomeActivity.this, LoginActivity.class);
-        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+//        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
         startActivity(intent);
         finish();
     }
@@ -261,9 +244,12 @@ public class HomeActivity extends AppCompatActivity implements ConnectionAsyncTa
     @Override
     public void onSuccess(List<Task> tasks) {
         if (tasks != null) {
+            for (Task task : tasks) {
+                task.setUserEmail(userEmail);
+            }
             originalTaskList.addAll(tasks);
+            removeDuplicateTasks(originalTaskList);
             // Notify active Fragments to refresh their data
-            DatabaseHelper dbHelper = DatabaseHelper.getInstance(this);
             for (Task task : originalTaskList) {
                 //set the user email to this user email
                 task.setUserEmail(userEmail);
@@ -274,6 +260,11 @@ public class HomeActivity extends AppCompatActivity implements ConnectionAsyncTa
         } else {
             Toast.makeText(this, "Error fetching tasks", Toast.LENGTH_SHORT).show();
         }
+    }
+
+    @Override
+    public void onPostExecute(List<Task> tasks) {
+
     }
 
     /**
@@ -292,11 +283,17 @@ public class HomeActivity extends AppCompatActivity implements ConnectionAsyncTa
      * @param newTask The Task object to add.
      */
     private void addNewTask(Task newTask) {
+        newTask.setUserEmail(userEmail);
+        newTask.setDueTime("12:00");
         originalTaskList.add(newTask);
+        removeDuplicateTasks(originalTaskList);
         notifyFragmentsDataChanged();
         Toast.makeText(this, "New Task Added", Toast.LENGTH_SHORT).show();
 
         // TODO: Implement persistent storage (e.g., save to database)
+        //save to database
+        DatabaseHelper dbHelper = DatabaseHelper.getInstance(this);
+        dbHelper.addTask(newTask);
     }
 
     /**
@@ -535,6 +532,20 @@ public class HomeActivity extends AppCompatActivity implements ConnectionAsyncTa
             default:
                 return super.onOptionsItemSelected(item);
         }
+    }
+    private void loadDatabase() {
+        List<Task> tasks = dbHelper.getTasksByUser(userEmail);
+        Log.d("HomeActivity", "loadDatabase: " + tasks.size());
+        //here we will read all tasks related to this user from the database
+        originalTaskList.addAll(tasks);
+        //remove dupes
+        removeDuplicateTasks(originalTaskList);
+    }
+
+    private void removeDuplicateTasks(List<Task> taskList) {
+        Set<Task> uniqueTasks = new HashSet<>(taskList);
+        taskList.clear();
+        taskList.addAll(uniqueTasks);
     }
 
 

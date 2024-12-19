@@ -7,10 +7,15 @@ import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
 import android.util.Log;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public class DatabaseHelper extends SQLiteOpenHelper {
-    private static final String DATABASE_NAME = "TodoApp.db";
+    private static final String DATABASE_NAME = "TodoApp2.db";
     private static final int DATABASE_VERSION = 1;
 
+
+    private static final String TAG = "DatabaseHelper";
     // Singleton instance
     private static DatabaseHelper instance;
 
@@ -124,6 +129,10 @@ public class DatabaseHelper extends SQLiteOpenHelper {
 
     // Task Management Methods
     public long addTask(Task task) {
+        if (taskExists(task.getTitle(), task.getUserEmail())) {
+            Log.d(TAG, "Task not added: A task with the title \"" + task.getTitle() + "\" already exists for user " + task.getUserEmail());
+            return -1;
+        }
         SQLiteDatabase db = this.getWritableDatabase();
         ContentValues values = new ContentValues();
         values.put(COLUMN_TASK_TITLE, task.getTitle());
@@ -140,6 +149,42 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         return result;
     }
 
+    /**
+     * Checks if a task with the specified title already exists for the given user email.
+     *
+     * @param title      The title of the task to check.
+     * @param userEmail  The email of the user.
+     * @return           True if the task exists, false otherwise.
+     */
+    public boolean taskExists(String title, String userEmail) {
+        SQLiteDatabase db = null;
+        Cursor cursor = null;
+        boolean exists = false;
+
+        try {
+            db = this.getReadableDatabase();
+            String query = "SELECT 1 FROM " + TABLE_TASK +
+                    " WHERE " + COLUMN_TASK_TITLE + " = ? AND " + COLUMN_USER_EMAIL + " = ? LIMIT 1";
+            cursor = db.rawQuery(query, new String[]{title, userEmail});
+            exists = cursor.moveToFirst();
+
+            if (exists) {
+                Log.d(TAG, "Task with title \"" + title + "\" already exists for user " + userEmail);
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "Error checking if task exists", e);
+        } finally {
+            if (cursor != null && !cursor.isClosed()) {
+                cursor.close();
+            }
+            if (db != null && db.isOpen()) {
+                db.close();
+            }
+        }
+
+        return exists;
+    }
+
     public boolean deleteTask(int taskID) {
         SQLiteDatabase db = this.getWritableDatabase();
         int rows = db.delete(TABLE_TASK, COLUMN_TASK_ID + " = ?", new String[]{String.valueOf(taskID)});
@@ -147,10 +192,38 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         return rows > 0;
     }
 
-    public Cursor getTasksByUser(String userEmail) {
+    public boolean deleteTasksByUser(String userEmail) {
+        SQLiteDatabase db = this.getWritableDatabase();
+        int rows = db.delete(TABLE_TASK, COLUMN_USER_EMAIL + " = ?", new String[]{userEmail});
+        Log.d("DatabaseHelper", "Deleted " + rows + " tasks for user: " + userEmail);
+
+        db.close();
+
+
+        return rows > 0;
+    }
+
+    public List<Task> getTasksByUser(String userEmail) {
+
+        List<Task> ret = new ArrayList<>();
         SQLiteDatabase db = this.getReadableDatabase();
         String query = "SELECT * FROM " + TABLE_TASK + " WHERE " + COLUMN_USER_EMAIL + " = ?";
-        return db.rawQuery(query, new String[]{userEmail});
+        Cursor cursor = db.rawQuery(query, new String[]{userEmail});
+        if (cursor.moveToFirst()) {
+            do {
+                Task task = new Task();
+                task.setTitle(cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_TASK_TITLE)));
+                task.setDescription(cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_TASK_DESCRIPTION)));
+                task.setDueDate(cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_DUE_DATE)));
+                task.setDueTime(cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_DUE_TIME)));
+                task.setPriority(cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_PRIORITY)));
+                task.setCompleted(cursor.getInt(cursor.getColumnIndexOrThrow(COLUMN_IS_COMPLETED)) == 1);
+                ret.add(task);
+            } while (cursor.moveToNext());
+        }
+        cursor.close();
+        db.close();
+        return ret;
     }
 
     public Cursor searchTasks(String userEmail, String keyword) {

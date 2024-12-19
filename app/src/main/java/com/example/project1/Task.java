@@ -1,7 +1,10 @@
 package com.example.project1;
 
-public class Task {
+import java.util.Objects;
+
+public class Task implements Comparable<Task> {
     // Data fields
+    private long id;
     private String title;
     private String description;
     private String dueDate;
@@ -81,6 +84,13 @@ public class Task {
         this.userEmail = userEmail;
     }
 
+    public long getId() {
+        return id;
+    }
+    public void setId(long id) {
+        this.id = id;
+    }
+
     @Override
     public String toString() {
         return "Task{" +
@@ -92,4 +102,30 @@ public class Task {
                 ", isCompleted=" + isCompleted +
                 '}';
     }
+
+    @Override
+    public int compareTo(Task task) {
+        // Compare tasks based on their due dates
+        return this.dueDate.compareTo(task.dueDate);
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj) return true; // Check reference equality
+        if (obj == null || getClass() != obj.getClass()) return false; // Check class type
+
+        Task task = (Task) obj;
+
+        // Compare relevant fields for equality
+        return Objects.equals(title, task.title) &&
+                Objects.equals(userEmail, task.userEmail);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(title, userEmail);
+    }
+
+
+
 }

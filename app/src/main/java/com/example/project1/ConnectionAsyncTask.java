@@ -76,6 +76,7 @@ public class ConnectionAsyncTask extends AsyncTask<String, Void, List<Task>> {
     public interface TaskListener {
         void onPreExecute();
         void onSuccess(List<Task> tasks);
+        void onPostExecute(List<Task> tasks);
         void onError(String errorMessage);
     }
 }
