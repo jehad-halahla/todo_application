@@ -31,6 +31,11 @@ public class CompletedTasksFragment extends BaseTaskFragment {
         return R.id.recycler_view_completed_tasks; // Ensure this ID matches your layout
     }
 
+    @Override
+    protected boolean isGrouped() {
+        return true;
+    }
+
     /**
      * Optionally, override onEditClick or onDeleteClick if specific behavior is needed.
      */

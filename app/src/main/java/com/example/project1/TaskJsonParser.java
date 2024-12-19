@@ -32,23 +32,22 @@ public class TaskJsonParser {
                 JSONObject jsonObject = tasksArray.getJSONObject(i);
 
                 // Extract fields from the JSON object
-                String id = jsonObject.getString("id");
+//                String id = jsonObject.getString("id");
                 String title = jsonObject.getString("title");
                 String description = jsonObject.getString("description");
                 String dueDate = jsonObject.getString("dueDate");
-                String priority = jsonObject.getString("priority");
-                boolean isCompleted = jsonObject.getBoolean("isCompleted");
-                boolean isReminderSet = jsonObject.getBoolean("isReminderSet");
+                String dueTime = jsonObject.getString("dueTime");
+                //check if there is a priority field if there is not, set it to medium
+                String priority = jsonObject.has("priority") ? jsonObject.getString("priority") : "Medium";
+
 
                 // Create a new Task object using the extracted data
                 Task task = new Task();
-                task.setId(Integer.parseInt(id));
                 task.setTitle(title);
                 task.setDescription(description);
                 task.setDueDate(dueDate);
+                task.setDueTime(dueTime);
                 task.setPriority(priority);
-                task.setCompleted(isCompleted);
-//                task.setReminderSet(isReminderSet);
 
                 // Add the Task object to the list
                 tasks.add(task);

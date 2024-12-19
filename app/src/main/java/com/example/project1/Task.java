@@ -1,29 +1,36 @@
 package com.example.project1;
 
 public class Task {
-    //data fields
-    int id;
-    String title;
-    String description;
-    String dueDate;
-    String priority;
-    boolean isCompleted;
-    String userEmail = ""; // the foriegn key
+    // Data fields
+    private String title;
+    private String description;
+    private String dueDate;
+    private String dueTime;
+    private String priority = "Medium"; // Default value
+    private boolean isCompleted = false; // Default value
+    private String userEmail;
 
-    //no task can be made with no user
+    // No task can be made with no user
+    public Task() {}
 
-    public Task(){}
-    public Task(String description, String dueDate, int id, boolean isCompleted, String priority, String title, String userEmail) {
+    public Task(String title, String description, String dueDate, String dueTime, String priority) {
+        this.title = title;
         this.description = description;
         this.dueDate = dueDate;
-        this.id = id;
-        this.isCompleted = isCompleted;
-        this.priority = priority;
-        this.title = title;
-        this.userEmail = userEmail;
+        this.dueTime = dueTime;
+        if (priority != null && !priority.isEmpty()) {
+            this.priority = priority;
+        }
     }
 
-    //setters and getters
+    // Setters and getters
+    public String getTitle() {
+        return title;
+    }
+
+    public void setTitle(String title) {
+        this.title = title;
+    }
 
     public String getDescription() {
         return description;
@@ -41,20 +48,12 @@ public class Task {
         this.dueDate = dueDate;
     }
 
-    public int getId() {
-        return id;
+    public String getDueTime() {
+        return dueTime;
     }
 
-    public void setId(int id) {
-        this.id = id;
-    }
-
-    public boolean isCompleted() {
-        return isCompleted;
-    }
-
-    public void setCompleted(boolean completed) {
-        isCompleted = completed;
+    public void setDueTime(String dueTime) {
+        this.dueTime = dueTime;
     }
 
     public String getPriority() {
@@ -62,21 +61,22 @@ public class Task {
     }
 
     public void setPriority(String priority) {
-        this.priority = priority;
+        if (priority != null && !priority.isEmpty()) {
+            this.priority = priority;
+        }
     }
 
-    public String getTitle() {
-        return title;
+    public boolean isCompleted() {
+        return isCompleted;
     }
 
-    public void setTitle(String title) {
-        this.title = title;
+    public void setCompleted(boolean isCompleted) {
+        this.isCompleted = isCompleted;
     }
 
     public String getUserEmail() {
         return userEmail;
     }
-
     public void setUserEmail(String userEmail) {
         this.userEmail = userEmail;
     }
@@ -84,13 +84,12 @@ public class Task {
     @Override
     public String toString() {
         return "Task{" +
-                "description='" + description + '\'' +
-                ", id=" + id +
-                ", title='" + title + '\'' +
+                "title='" + title + '\'' +
+                ", description='" + description + '\'' +
                 ", dueDate='" + dueDate + '\'' +
+                ", dueTime='" + dueTime + '\'' +
                 ", priority='" + priority + '\'' +
                 ", isCompleted=" + isCompleted +
-//                ", userEmail='" + userEmail + '\'' +
                 '}';
     }
 }

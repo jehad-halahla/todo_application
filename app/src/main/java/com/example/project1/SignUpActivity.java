@@ -27,7 +27,7 @@ public class SignUpActivity extends AppCompatActivity {
         setContentView(R.layout.activity_signup);
 
         initializeViews();
-        dbHelper = new DatabaseHelper(this);
+        dbHelper = DatabaseHelper.getInstance(this);
 
         signUpButton.setOnClickListener(v -> handleSignUp());
         signInLink.setOnClickListener(v -> handleSignInLink());

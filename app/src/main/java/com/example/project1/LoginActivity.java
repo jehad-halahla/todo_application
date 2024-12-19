@@ -30,13 +30,13 @@ public class LoginActivity extends AppCompatActivity {
         setContentView(R.layout.activity_login); // Use correct layout
 
         initializeViews();
-        dbHelper = new DatabaseHelper(this);
+        dbHelper = DatabaseHelper.getInstance(this);
 
         setupSharedPreferences();
         loadSavedCredentials();
 
         // Print database contents for debugging
-        dbHelper.printDatabaseContents();
+//        dbHelper.printDatabaseContents();
 
         setupEventListeners();
     }

@@ -31,6 +31,11 @@ public class TodayTasksFragment extends BaseTaskFragment {
         return R.id.recycler_view_today_tasks; // Ensure this ID matches your layout
     }
 
+    @Override
+    protected boolean isGrouped() {
+        return false;
+    }
+
     /**
      * Optionally, override onEditClick or onDeleteClick if specific behavior is needed.
      */

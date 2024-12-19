@@ -3,7 +3,9 @@ package com.example.project1;
 import android.app.DatePickerDialog;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.database.Cursor;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.MenuItem;
 import android.view.View;
@@ -45,6 +47,8 @@ public class HomeActivity extends AppCompatActivity implements ConnectionAsyncTa
     private String userName;
     private String userEmail;
 
+    private DatabaseHelper dbHelper;
+
     // UI Components
     private DrawerLayout drawerLayout;
     private NavigationView navigationView;
@@ -52,6 +56,8 @@ public class HomeActivity extends AppCompatActivity implements ConnectionAsyncTa
     private ActionBarDrawerToggle toggle;
 
     private FloatingActionButton floatingActionButton;
+
+    private BaseTaskFragment currentFragment;
 
     // Data Lists
     private final List<Task> originalTaskList = new ArrayList<>();  // Holds all tasks
@@ -78,6 +84,29 @@ public class HomeActivity extends AppCompatActivity implements ConnectionAsyncTa
 
         // Set FloatingActionButton click listener to add a new task
         floatingActionButton.setOnClickListener(v -> populateTasks());
+        //read the tasks from the database
+        dbHelper = DatabaseHelper.getInstance(this);
+        Cursor cursor_1 = dbHelper.getTasksByUser(userEmail);
+        //also load completed tasks into the original task list
+        if (cursor_1 != null) {
+            while (cursor_1.moveToNext()) {
+                //read the tasks from the database
+                String title = cursor_1.getString(cursor_1.getColumnIndexOrThrow("Title"));
+                String description = cursor_1.getString(cursor_1.getColumnIndexOrThrow("Description"));
+                String dueDate = cursor_1.getString(cursor_1.getColumnIndexOrThrow("DueDate"));
+                String dueTime = cursor_1.getString(cursor_1.getColumnIndexOrThrow("DueTime"));
+                String priority = cursor_1.getString(cursor_1.getColumnIndexOrThrow("Priority"));
+                boolean isCompleted = cursor_1.getInt(cursor_1.getColumnIndexOrThrow("IsCompleted")) == 1;
+                Task task = new Task();
+                task.setTitle(title);
+                task.setDescription(description);
+                task.setDueDate(dueDate);
+                task.setDueTime(dueTime);
+                task.setPriority(priority);
+                task.setCompleted(isCompleted);
+                originalTaskList.add(task);
+            }
+        }
 
     }
 
@@ -122,12 +151,11 @@ public class HomeActivity extends AppCompatActivity implements ConnectionAsyncTa
         navigationView.setNavigationItemSelectedListener(new NavigationView.OnNavigationItemSelectedListener() {
             @Override
             public boolean onNavigationItemSelected(@NonNull MenuItem menuItem) {
-                Fragment selectedFragment = null;
                 String filterTitle = "";
 
                 switch (menuItem.getItemId()) {
                     case R.id.nav_today:
-                        selectedFragment = TodayTasksFragment.newInstance();
+                        currentFragment = TodayTasksFragment.newInstance();
                         filterTitle = getString(R.string.nav_today);
                         break;
                     case R.id.nav_new_task:
@@ -137,11 +165,11 @@ public class HomeActivity extends AppCompatActivity implements ConnectionAsyncTa
                         drawerLayout.closeDrawer(GravityCompat.START);
                         return true; // Early return since we're not loading a fragment
                     case R.id.nav_all:
-                        selectedFragment = AllTasksFragment.newInstance();
+                        currentFragment = AllTasksFragment.newInstance();
                         filterTitle = getString(R.string.nav_all);
                         break;
                     case R.id.nav_completed:
-                        selectedFragment = CompletedTasksFragment.newInstance();
+                        currentFragment = CompletedTasksFragment.newInstance();
                         filterTitle = getString(R.string.nav_completed);
                         break;
                     case R.id.nav_search:
@@ -163,8 +191,8 @@ public class HomeActivity extends AppCompatActivity implements ConnectionAsyncTa
                         break;
                 }
 
-                if (selectedFragment != null) {
-                    loadFragment(selectedFragment);
+                if (currentFragment != null) {
+                    loadFragment(currentFragment);
                     setTitle(filterTitle);
                 }
 
@@ -191,12 +219,14 @@ public class HomeActivity extends AppCompatActivity implements ConnectionAsyncTa
      * Populates the original task list by fetching data from the API or local storage.
      */
     private void populateTasks() {
+        Log.d("HomeActivity", "populateTasks called");
         // Clear existing tasks to avoid duplication
         originalTaskList.clear();
-
         // Execute the AsyncTask to fetch tasks from the API
-        String apiUrl = "https://mocki.io/v1/b00eafce-248d-4ef2-af82-16063a826fa6"; // Replace with your actual API URL
+        String apiUrl = "https://mocki.io/v1/12cf4ca9-ef06-47ce-b2ef-68671e5bf9db"; // Replace with your actual API URL
         new ConnectionAsyncTask(this).execute(apiUrl);
+        //add the tasks to the database
+
     }
 
     /**
@@ -231,6 +261,13 @@ public class HomeActivity extends AppCompatActivity implements ConnectionAsyncTa
         if (tasks != null) {
             originalTaskList.addAll(tasks);
             // Notify active Fragments to refresh their data
+            DatabaseHelper dbHelper = DatabaseHelper.getInstance(this);
+            for (Task task : originalTaskList) {
+                //set the user email to this user email
+                task.setUserEmail(userEmail);
+                dbHelper.addTask(task);
+                Log.d("HomeActivity", "populateTasks: " + task.getTitle());
+            }
             notifyFragmentsDataChanged();
         } else {
             Toast.makeText(this, "Error fetching tasks", Toast.LENGTH_SHORT).show();
@@ -266,15 +303,16 @@ public class HomeActivity extends AppCompatActivity implements ConnectionAsyncTa
      * @param task The Task object to delete.
      */
     public void deleteTask(Task task) {
-        originalTaskList.remove(task);
-        notifyFragmentsDataChanged();
+//        originalTaskList.remove(task);
+        int i = originalTaskList.indexOf(task);
+        notifyFragmentsDataChanged(i);
         Toast.makeText(this, "Deleted Task: " + task.getTitle(), Toast.LENGTH_SHORT).show();
 
         // TODO: Implement deletion from persistent storage (e.g., remove from database)
     }
 
     /**
-     * Notifies all active Fragments to refresh their task lists.
+     * Notifies all active Fragments to refresh their task lists when fragment loaded.
      */
     private void notifyFragmentsDataChanged() {
         FragmentManager fragmentManager = getSupportFragmentManager();
@@ -286,6 +324,28 @@ public class HomeActivity extends AppCompatActivity implements ConnectionAsyncTa
             }
         }
     }
+
+    private void notifyFragmentsDataChanged(int i) {
+        // Ensure the current fragment is an instance of BaseTaskFragment
+        if (currentFragment != null && currentFragment instanceof BaseTaskFragment) {
+            // Call the fragment's refreshTasks method to handle deletion
+            currentFragment.refreshTasks(i);
+
+            // Debug log for confirmation
+            Log.d("HomeActivity", "Task at index " + i + " removed. Notified fragment.");
+        } else {
+            Log.e("HomeActivity", "Current fragment is null or not a BaseTaskFragment.");
+        }
+
+        // Remove the task from the originalTaskList to keep data consistent
+        if (i >= 0 && i < originalTaskList.size()) {
+            originalTaskList.remove(i);
+            Log.d("HomeActivity", "Task at index " + i + " removed from originalTaskList.");
+        } else {
+            Log.e("HomeActivity", "Invalid index " + i + " for task removal.");
+        }
+    }
+
 
     /**
      * Shows a dialog to add a new task.
@@ -436,7 +496,7 @@ public class HomeActivity extends AppCompatActivity implements ConnectionAsyncTa
                 SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());
                 String todayDate = sdf.format(new Date());
                 for (Task task : originalTaskList) {
-                    if (task.getDueDate().startsWith(todayDate)) {
+                    if (task.getDueDate().startsWith(todayDate) && !task.isCompleted()) {
                         filteredList.add(task);
                     }
                 }

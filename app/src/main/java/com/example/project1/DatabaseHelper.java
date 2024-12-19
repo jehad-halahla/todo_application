@@ -11,6 +11,9 @@ public class DatabaseHelper extends SQLiteOpenHelper {
     private static final String DATABASE_NAME = "TodoApp.db";
     private static final int DATABASE_VERSION = 1;
 
+    // Singleton instance
+    private static DatabaseHelper instance;
+
     // User table
     private static final String TABLE_USER = "User";
     private static final String COLUMN_EMAIL = "Email";
@@ -24,12 +27,27 @@ public class DatabaseHelper extends SQLiteOpenHelper {
     private static final String COLUMN_TASK_TITLE = "Title";
     private static final String COLUMN_TASK_DESCRIPTION = "Description";
     private static final String COLUMN_DUE_DATE = "DueDate";
+    private static final String COLUMN_DUE_TIME = "DueTime";
     private static final String COLUMN_PRIORITY = "Priority";
     private static final String COLUMN_IS_COMPLETED = "IsCompleted";
     private static final String COLUMN_USER_EMAIL = "UserEmail"; // Foreign key
 
-    public DatabaseHelper(Context context) {
-        super(context, DATABASE_NAME, null, DATABASE_VERSION);
+    // Private constructor to prevent direct instantiation
+    private DatabaseHelper(Context context) {
+        super(context.getApplicationContext(), DATABASE_NAME, null, DATABASE_VERSION);
+    }
+
+    /**
+     * Returns the singleton instance of DatabaseHelper.
+     *
+     * @param context The context used to create or retrieve the instance.
+     * @return The singleton instance of DatabaseHelper.
+     */
+    public static synchronized DatabaseHelper getInstance(Context context) {
+        if (instance == null) {
+            instance = new DatabaseHelper(context);
+        }
+        return instance;
     }
 
     @Override
@@ -48,8 +66,9 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                 + COLUMN_TASK_TITLE + " TEXT NOT NULL, "
                 + COLUMN_TASK_DESCRIPTION + " TEXT, "
                 + COLUMN_DUE_DATE + " TEXT NOT NULL, "
+                + COLUMN_DUE_TIME + " TEXT NOT NULL, "
                 + COLUMN_PRIORITY + " TEXT NOT NULL, "
-                + COLUMN_IS_COMPLETED + " INTEGER DEFAULT 0, " // 0 = false, 1 = true
+                + COLUMN_IS_COMPLETED + " INTEGER DEFAULT 0, "
                 + COLUMN_USER_EMAIL + " TEXT NOT NULL, "
                 + "FOREIGN KEY(" + COLUMN_USER_EMAIL + ") REFERENCES " + TABLE_USER + "(" + COLUMN_EMAIL + "))";
         db.execSQL(CREATE_TASK_TABLE);
@@ -110,27 +129,15 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         values.put(COLUMN_TASK_TITLE, task.getTitle());
         values.put(COLUMN_TASK_DESCRIPTION, task.getDescription());
         values.put(COLUMN_DUE_DATE, task.getDueDate());
+        values.put(COLUMN_DUE_TIME, task.getDueTime());
         values.put(COLUMN_PRIORITY, task.getPriority());
         values.put(COLUMN_IS_COMPLETED, task.isCompleted() ? 1 : 0);
-//        values.put(COLUMN_USER_EMAIL, task.getUserEmail());
+        values.put(COLUMN_USER_EMAIL, task.getUserEmail());
 
         long result = db.insert(TABLE_TASK, null, values);
         db.close();
+        Log.d("DatabaseHelper", "Task added with ID: " + result);
         return result;
-    }
-
-    public boolean updateTask(Task task) {
-        SQLiteDatabase db = this.getWritableDatabase();
-        ContentValues values = new ContentValues();
-        values.put(COLUMN_TASK_TITLE, task.getTitle());
-        values.put(COLUMN_TASK_DESCRIPTION, task.getDescription());
-        values.put(COLUMN_DUE_DATE, task.getDueDate());
-        values.put(COLUMN_PRIORITY, task.getPriority());
-        values.put(COLUMN_IS_COMPLETED, task.isCompleted() ? 1 : 0);
-
-        int rows = db.update(TABLE_TASK, values, COLUMN_TASK_ID + " = ?", new String[]{String.valueOf(task.getId())});
-        db.close();
-        return rows > 0;
     }
 
     public boolean deleteTask(int taskID) {
@@ -140,12 +147,9 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         return rows > 0;
     }
 
-    public Cursor getTasksByUser(String userEmail, boolean showCompleted) {
+    public Cursor getTasksByUser(String userEmail) {
         SQLiteDatabase db = this.getReadableDatabase();
         String query = "SELECT * FROM " + TABLE_TASK + " WHERE " + COLUMN_USER_EMAIL + " = ?";
-        if (!showCompleted) {
-            query += " AND " + COLUMN_IS_COMPLETED + " = 0";
-        }
         return db.rawQuery(query, new String[]{userEmail});
     }
 

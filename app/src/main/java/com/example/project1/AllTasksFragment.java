@@ -8,6 +8,9 @@ import androidx.annotation.Nullable;
  */
 public class AllTasksFragment extends BaseTaskFragment {
 
+
+
+
     public AllTasksFragment() {
         // Required empty public constructor
     }
@@ -15,6 +18,7 @@ public class AllTasksFragment extends BaseTaskFragment {
     public static AllTasksFragment newInstance() {
         return new AllTasksFragment();
     }
+
 
     @Override
     protected String getFilterType() {
@@ -29,6 +33,11 @@ public class AllTasksFragment extends BaseTaskFragment {
     @Override
     protected int getRecyclerViewId() {
         return R.id.recycler_view_all_tasks; // Ensure this ID matches your layout
+    }
+
+    @Override
+    protected boolean isGrouped() {
+        return true;
     }
 
     /**
