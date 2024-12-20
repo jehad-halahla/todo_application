@@ -5,9 +5,11 @@ import android.app.TimePickerDialog;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.database.Cursor;
+import android.graphics.drawable.AnimationDrawable;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.LayoutInflater;
+import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
@@ -16,6 +18,7 @@ import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.DatePicker;
 import android.widget.EditText;
+import android.widget.ImageView;
 import android.widget.SearchView;
 import android.widget.Spinner;
 import android.widget.Toast;
@@ -351,24 +354,28 @@ public class HomeActivity extends AppCompatActivity implements ConnectionAsyncTa
         LayoutInflater inflater = LayoutInflater.from(this);
         View dialogView = inflater.inflate(R.layout.add_task_layout, null);
 
-        // Initialize UI components within the dialog
+        // Initialize UI components
         EditText editTextTitle = dialogView.findViewById(R.id.edit_text_task_title);
         EditText editTextDescription = dialogView.findViewById(R.id.edit_text_task_description);
         EditText editTextDueDate = dialogView.findViewById(R.id.edit_text_task_due_date);
         EditText editTextDueTime = dialogView.findViewById(R.id.edit_text_task_due_time);
+        EditText editTextReminderDate = dialogView.findViewById(R.id.edit_text_task_reminder_date);
+        EditText editTextReminderTime = dialogView.findViewById(R.id.edit_text_task_reminder_time);
         Spinner spinnerPriority = dialogView.findViewById(R.id.spinner_task_priority);
         Button buttonAddTask = dialogView.findViewById(R.id.button_add_task);
         Button buttonCancel = dialogView.findViewById(R.id.button_cancel);
 
         // Set up the Spinner for task priority
-        ArrayAdapter<CharSequence> adapter = ArrayAdapter.createFromResource(this,
-                R.array.priority_levels, android.R.layout.simple_spinner_item);
+        ArrayAdapter<CharSequence> adapter = ArrayAdapter.createFromResource(
+                this, R.array.priority_levels, android.R.layout.simple_spinner_item);
         adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         spinnerPriority.setAdapter(adapter);
 
-        // Set a DatePickerDialog when due date EditText is clicked
+        // Show date and time pickers when clicking on the respective fields
         editTextDueDate.setOnClickListener(v -> showDatePickerDialog(editTextDueDate));
         editTextDueTime.setOnClickListener(v -> showTimePicker(editTextDueTime));
+        editTextReminderDate.setOnClickListener(v -> showDatePickerDialog(editTextReminderDate));
+        editTextReminderTime.setOnClickListener(v -> showTimePicker(editTextReminderTime));
 
         // Build the AlertDialog without title and default buttons
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
@@ -384,6 +391,8 @@ public class HomeActivity extends AppCompatActivity implements ConnectionAsyncTa
             String description = editTextDescription.getText().toString().trim();
             String dueDate = editTextDueDate.getText().toString().trim();
             String dueTime = editTextDueTime.getText().toString().trim();
+            String reminderDate = editTextReminderDate.getText().toString().trim();
+            String reminderTime = editTextReminderTime.getText().toString().trim();
             String priority = spinnerPriority.getSelectedItem().toString();
 
             // Validate inputs
@@ -399,26 +408,45 @@ public class HomeActivity extends AppCompatActivity implements ConnectionAsyncTa
                 return;
             }
 
-            // Validate the due date format
-            if (!isValidDate(dueDate)) {
-                editTextDueDate.setError("Invalid date format. Use YYYY-MM-DD");
-                editTextDueDate.requestFocus();
-                return;
-            }
-
-            if (!isValidTime(dueTime)) {
-                editTextDueTime.setError("Invalid time format. Use HH:MM");
+            if (dueTime.isEmpty()) {
+                editTextDueTime.setError("Due time is required");
                 editTextDueTime.requestFocus();
                 return;
             }
 
-            //also make sure the due date is not in the past
-            if(inPast(dueDate+" "+dueTime)){
+            if (reminderDate.isEmpty()) {
+                editTextReminderDate.setError("Reminder date is required");
+                editTextReminderDate.requestFocus();
+                return;
+            }
+
+            if (reminderTime.isEmpty()) {
+                editTextReminderTime.setError("Reminder time is required");
+                editTextReminderTime.requestFocus();
+                return;
+            }
+
+            // Validate the due date and reminder date
+            String dueDateTime = dueDate + " " + dueTime;
+            String reminderDateTime = reminderDate + " " + reminderTime;
+
+            if (inPast(dueDateTime)) {
                 editTextDueDate.setError("Due date cannot be in the past");
                 editTextDueDate.requestFocus();
                 return;
             }
 
+            if (inPast(reminderDateTime)) {
+                editTextReminderDate.setError("Reminder date cannot be in the past");
+                editTextReminderDate.requestFocus();
+                return;
+            }
+
+            if (compareDatesWithTime(dueDateTime, reminderDateTime) < 0) {
+                editTextReminderDate.setError("Reminder time must be before the due date");
+                editTextReminderDate.requestFocus();
+                return;
+            }
 
             // Create a new Task object
             Task newTask = new Task();
@@ -426,7 +454,9 @@ public class HomeActivity extends AppCompatActivity implements ConnectionAsyncTa
             newTask.setDescription(description);
             newTask.setDueDate(dueDate);
             newTask.setDueTime(dueTime);
+            newTask.setReminderTime(reminderDateTime);
             newTask.setPriority(priority);
+
             // Add the new task to the list
             addNewTask(newTask);
 
@@ -550,7 +580,7 @@ public class HomeActivity extends AppCompatActivity implements ConnectionAsyncTa
     }
 
     @Override
-    public boolean onCreateOptionsMenu(android.view.Menu menu) {
+    public boolean onCreateOptionsMenu(Menu menu) {
         MenuInflater inflater = getMenuInflater();
         inflater.inflate(R.menu.tool_bar_menu, menu); // Inflate the menu; this adds items to the action bar if it is present.
         MenuItem searchItem = menu.findItem(R.id.action_search);
@@ -595,8 +625,10 @@ public class HomeActivity extends AppCompatActivity implements ConnectionAsyncTa
         List<Task> tasks;
         dbHelper = DatabaseHelper.getInstance(this);
         tasks = dbHelper.getTasksByUser(userEmail);
-        Log.d("HomeActivity", "loadDatabase: " + tasks.size());
-
+        //now log all this to the console
+        for (Task task : tasks) {
+            Log.d("HomeActivity", "Task: " + task.toString());
+        }
     }
 
     private void sortTasks() {
@@ -628,6 +660,14 @@ public class HomeActivity extends AppCompatActivity implements ConnectionAsyncTa
 
         //init the DataFormatter
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+        LocalDate localDate1 = LocalDate.parse(date1, formatter);
+        LocalDate localDate2 = LocalDate.parse(date2, formatter);
+        return localDate1.compareTo(localDate2);
+    }
+
+    public int compareDatesWithTime(String date1, String date2){
+        //init the DataFormatter
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
         LocalDate localDate1 = LocalDate.parse(date1, formatter);
         LocalDate localDate2 = LocalDate.parse(date2, formatter);
         return localDate1.compareTo(localDate2);
@@ -665,4 +705,128 @@ public class HomeActivity extends AppCompatActivity implements ConnectionAsyncTa
 //        finish();
     }
 
+    public void showDoneDialog() {
+        // i want to show an animation
+        LayoutInflater inflater = LayoutInflater.from(this);
+        View dialogView = inflater.inflate(R.layout.anim_done, null);
+
+        Button doneBtn = dialogView.findViewById(R.id.done_btn);
+        ImageView animImageView = dialogView.findViewById(R.id.birdImageView);
+
+        animImageView.setBackgroundResource(R.drawable.animation_list);
+        //now do the animation
+        AnimationDrawable RabbitAnimation = (AnimationDrawable) animImageView.getBackground();
+        //bind the cancel button to the dialog
+
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setView(dialogView);
+        AlertDialog dialog = builder.create();
+        dialog.show();
+        //do some delay to show the animation
+
+        RabbitAnimation.start();
+        doneBtn.setOnClickListener(v -> dialog.dismiss());
+
+    }
+
+    public void showEditTaskDialog(Task task) {
+        // Inflate the custom dialog layout
+        LayoutInflater inflater = LayoutInflater.from(this);
+        View dialogView = inflater.inflate(R.layout.edit_task_dialog, null);
+
+        // Initialize UI components
+        EditText editTextTitle = dialogView.findViewById(R.id.edit_text_task_title);
+        EditText editTextDescription = dialogView.findViewById(R.id.edit_text_task_description);
+        EditText editTextDueDate = dialogView.findViewById(R.id.edit_text_task_due_date);
+        EditText editTextDueTime = dialogView.findViewById(R.id.edit_text_task_due_time);
+        EditText editTextReminderTime_t = dialogView.findViewById(R.id.edit_text_task_reminder_time_t);
+        EditText editTextReminderTime = dialogView.findViewById(R.id.edit_text_task_reminder_time);
+        Spinner spinnerPriority = dialogView.findViewById(R.id.spinner_task_priority);
+        Button doneBtn = dialogView.findViewById(R.id.button_add_task);
+        Button cancelBtn = dialogView.findViewById(R.id.button_cancel);
+
+        // Populate the fields with the task's current data
+        editTextTitle.setText(task.getTitle());
+        editTextDescription.setText(task.getDescription());
+        editTextDueDate.setText(task.getDueDate());
+        editTextDueTime.setText(task.getDueTime());
+        editTextReminderTime.setText(task.getReminderTime().split(" ")[0]);
+        editTextReminderTime_t.setText(task.getReminderTime().split(" ")[1]);
+
+        // Set up the Spinner for task priority
+        ArrayAdapter<CharSequence> adapter = ArrayAdapter.createFromResource(
+                this, R.array.priority_levels, android.R.layout.simple_spinner_item);
+        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        spinnerPriority.setAdapter(adapter);
+
+        // Set the current priority level
+        int spinnerPosition = adapter.getPosition(task.getPriority());
+        spinnerPriority.setSelection(spinnerPosition);
+
+        // Build and display the AlertDialog
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setView(dialogView);
+        AlertDialog dialog = builder.create();
+        dialog.show();
+
+        // Handle the "Done" button click to update the task
+        doneBtn.setOnClickListener(v -> {
+            Task updatedTask = new Task();
+            updatedTask.setId(task.getId());
+            updatedTask.setUserEmail(task.getUserEmail());
+            updatedTask.setTitle(editTextTitle.getText().toString());
+            updatedTask.setDescription(editTextDescription.getText().toString());
+            updatedTask.setDueDate(editTextDueDate.getText().toString());
+            updatedTask.setDueTime(editTextDueTime.getText().toString());
+            updatedTask.setReminderTime(editTextReminderTime.getText().toString() + " " + editTextReminderTime_t.getText().toString());
+            updatedTask.setPriority(spinnerPriority.getSelectedItem().toString());
+
+            // Validate the due date and time
+            if (inPast(updatedTask.getDueDate() + " " + updatedTask.getDueTime())) {
+                editTextDueDate.setError("Due date cannot be in the past");
+                editTextDueTime.setError("Due time cannot be in the past");
+                editTextDueDate.requestFocus();
+                return;
+            }
+            //Make sure the reminder time is not in the past and also before the due date
+            if(inPast(updatedTask.getReminderTime())){
+                editTextDueDate.setError("Reminder time cannot be in the past");
+                editTextDueDate.requestFocus();
+                return;
+            }
+
+            //make sure the reminder time is before the due date and due time
+            if(compareDatesWithTime(updatedTask.getDueDate() + " " + updatedTask.getDueTime(), updatedTask.getReminderTime()) < 0){
+                editTextDueDate.setError("Reminder time must be before due date");
+                editTextDueDate.requestFocus();
+                return;
+            }
+            if(compareDatesWithTime(updatedTask.getDueDate() + " " + updatedTask.getDueTime(), updatedTask.getReminderTime()) < 0){}
+
+            // Update the task in the database
+            dbHelper.updateTask(updatedTask, task.getUserEmail(), task.getTitle());
+            notifyFragmentsDataChanged();
+            dialog.dismiss();
+        });
+
+        // Handle the "Cancel" button click to dismiss the dialog
+        cancelBtn.setOnClickListener(v -> dialog.dismiss());
+
+        // Show date and time pickers when clicking on the respective fields
+        editTextDueDate.setOnClickListener(v -> showDatePickerDialog(editTextDueDate));
+        editTextDueTime.setOnClickListener(v -> showTimePicker(editTextDueTime));
+        editTextReminderTime.setOnClickListener(v -> showDatePickerDialog(editTextReminderTime));
+        editTextReminderTime_t.setOnClickListener(v -> showTimePicker(editTextReminderTime_t));
+    }
+
+    public void onAddNotificationClick(Task task) {
+        Toast.makeText(this, "Add Notification Clicked", Toast.LENGTH_SHORT).show();
+        SetNotificationDialog setNotificationDialog = new SetNotificationDialog(task);
+        // Get the FragmentManager (usually from an Activity or Fragment)
+        FragmentManager fragmentManager = getSupportFragmentManager(); // In an Activity
+        // FragmentManager fragmentManager = getChildFragmentManager(); // In a Fragment
+        // Create and show the dialog
+        SetNotificationDialog dialog = new SetNotificationDialog(task);
+        dialog.show(fragmentManager, "SetNotificationDialog");
+    }
 }

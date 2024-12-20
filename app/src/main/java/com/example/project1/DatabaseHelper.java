@@ -11,7 +11,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class DatabaseHelper extends SQLiteOpenHelper {
-    private static final String DATABASE_NAME = "TodoApp2.db";
+    private static final String DATABASE_NAME = "TodoApp3.db";
     private static final int DATABASE_VERSION = 1;
 
 
@@ -35,6 +35,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
     private static final String COLUMN_DUE_TIME = "DueTime";
     private static final String COLUMN_PRIORITY = "Priority";
     private static final String COLUMN_IS_COMPLETED = "IsCompleted";
+    private static final String COLUMN_REMINDER_TIME = "ReminderTime";
     private static final String COLUMN_USER_EMAIL = "UserEmail"; // Foreign key
 
     // Private constructor to prevent direct instantiation
@@ -72,6 +73,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                 + COLUMN_TASK_DESCRIPTION + " TEXT, "
                 + COLUMN_DUE_DATE + " TEXT NOT NULL, "
                 + COLUMN_DUE_TIME + " TEXT NOT NULL, "
+                + COLUMN_REMINDER_TIME + " TEXT NOT NULL, "
                 + COLUMN_PRIORITY + " TEXT NOT NULL, "
                 + COLUMN_IS_COMPLETED + " INTEGER DEFAULT 0, "
                 + COLUMN_USER_EMAIL + " TEXT NOT NULL, "
@@ -97,6 +99,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         values.put(COLUMN_FIRST_NAME, user.getFirstName());
         values.put(COLUMN_LAST_NAME, user.getLastName());
         values.put(COLUMN_PASSWORD, user.getPassword());
+
 
         long result = db.insert(TABLE_USER, null, values);
         db.close();
@@ -139,6 +142,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         values.put(COLUMN_TASK_DESCRIPTION, task.getDescription());
         values.put(COLUMN_DUE_DATE, task.getDueDate());
         values.put(COLUMN_DUE_TIME, task.getDueTime());
+        values.put(COLUMN_REMINDER_TIME, task.getReminderTime());
         values.put(COLUMN_PRIORITY, task.getPriority());
         values.put(COLUMN_IS_COMPLETED, task.isCompleted() ? 1 : 0);
         values.put(COLUMN_USER_EMAIL, task.getUserEmail());
@@ -215,10 +219,12 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         if (cursor.moveToFirst()) {
             do {
                 Task task = new Task();
+                task.setId(cursor.getInt(cursor.getColumnIndexOrThrow(COLUMN_TASK_ID)));
                 task.setTitle(cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_TASK_TITLE)));
                 task.setDescription(cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_TASK_DESCRIPTION)));
                 task.setDueDate(cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_DUE_DATE)));
                 task.setDueTime(cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_DUE_TIME)));
+                task.setReminderTime(cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_REMINDER_TIME)));
                 task.setPriority(cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_PRIORITY)));
                 task.setCompleted(cursor.getInt(cursor.getColumnIndexOrThrow(COLUMN_IS_COMPLETED)) == 1);
                 task.setUserEmail(cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_USER_EMAIL)));
@@ -338,6 +344,45 @@ public class DatabaseHelper extends SQLiteOpenHelper {
 
         // Update the password where the email matches
         int rowsAffected = db.update(TABLE_USER, values, COLUMN_EMAIL + " = ?", new String[]{email});
+
+        return rowsAffected > 0;
+    }
+
+    public boolean updateCompletedState(Task task) {
+        SQLiteDatabase db = this.getWritableDatabase();
+        ContentValues values = new ContentValues();
+        values.put(COLUMN_IS_COMPLETED, task.isCompleted() ? 1 : 0);
+
+        // Update where task title and user email match
+        return db.update(TABLE_TASK, values, COLUMN_TASK_TITLE + " = ? AND " + COLUMN_USER_EMAIL + " = ?",
+                new String[]{task.getTitle(), task.getUserEmail()}) > 0;
+    }
+
+    public  boolean updateTask(Task task, String userEmail, String title){
+        SQLiteDatabase db = this.getWritableDatabase();
+        ContentValues values = new ContentValues();
+        values.put(COLUMN_TASK_TITLE, task.getTitle());
+        values.put(COLUMN_TASK_DESCRIPTION, task.getDescription());
+        values.put(COLUMN_DUE_DATE, task.getDueDate());
+        values.put(COLUMN_DUE_TIME, task.getDueTime());
+        values.put(COLUMN_REMINDER_TIME, task.getReminderTime());
+        values.put(COLUMN_PRIORITY, task.getPriority());
+        values.put(COLUMN_USER_EMAIL, task.getUserEmail());
+
+        Log.d(TAG, "Updating task with title: " + title + " and user email: " + userEmail);
+        Log.d(TAG, "New values: " + values.toString());
+        int rowsAffected = db.update(TABLE_TASK, values, COLUMN_TASK_TITLE + " = ? AND " + COLUMN_USER_EMAIL + " = ?",
+                new String[]{title, userEmail});
+        return rowsAffected > 0;
+
+    }
+
+    public boolean updateTaskReminderTime(Task task, String reminderTime) {
+        SQLiteDatabase db = this.getWritableDatabase();
+        ContentValues values = new ContentValues();
+        values.put(COLUMN_REMINDER_TIME, reminderTime);
+        Log.d(TAG, "Updating task:" + task.toString());
+        int rowsAffected = db.update(TABLE_TASK, values, COLUMN_TASK_ID + " = ?", new String[]{String.valueOf(task.getId())});
 
         return rowsAffected > 0;
     }

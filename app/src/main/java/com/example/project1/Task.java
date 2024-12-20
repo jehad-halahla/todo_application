@@ -1,5 +1,8 @@
 package com.example.project1;
 
+import java.text.SimpleDateFormat;
+import java.util.Calendar;
+import java.util.Locale;
 import java.util.Objects;
 
 public class Task implements Comparable<Task> {
@@ -9,12 +12,14 @@ public class Task implements Comparable<Task> {
     private String description;
     private String dueDate;
     private String dueTime;
+    private String reminderTime;//initalize reminder time
     private String priority = "Medium"; // Default value
     private boolean isCompleted = false; // Default value
     private String userEmail;
 
     // No task can be made with no user
-    public Task() {}
+    public Task() {
+    }
 
     public Task(String title, String description, String dueDate, String dueTime, String priority) {
         this.title = title;
@@ -94,10 +99,12 @@ public class Task implements Comparable<Task> {
     @Override
     public String toString() {
         return "Task{" +
+                "id=" + id +
                 "title='" + title + '\'' +
                 ", description='" + description + '\'' +
                 ", dueDate='" + dueDate + '\'' +
                 ", dueTime='" + dueTime + '\'' +
+                ", reminderTime='" + reminderTime + '\'' +
                 ", priority='" + priority + '\'' +
                 ", isCompleted=" + isCompleted +
                 '}';
@@ -127,4 +134,35 @@ public class Task implements Comparable<Task> {
     }
 
 
+    public String generateReminderTime() {
+        try {
+            // Combine due date and time into a single string
+            String dueDateTime = dueDate + " " + dueTime;
+
+            // Parse the dueDateTime into a Calendar object
+            SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault());
+            Calendar calendar = Calendar.getInstance();
+            calendar.setTime(sdf.parse(dueDateTime));
+
+            // Adjust the reminder time (e.g., 30 minutes before due time)
+            calendar.add(Calendar.MINUTE, -30);
+
+            // Format and return the reminder time
+            return sdf.format(calendar.getTime());
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null; // Return null in case of an error
+        }
+    }
+
+    public String getReminderTime() {
+        if (reminderTime == null) {
+            reminderTime = generateReminderTime();
+        }
+        return this.reminderTime;
+    }
+
+    public void setReminderTime(String reminderTime) {
+        this.reminderTime = reminderTime;
+    }
 }

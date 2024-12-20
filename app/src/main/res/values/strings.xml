@@ -30,4 +30,31 @@
     <string name="add_task">Add Task</string>
 
 
+
+    <!-- SetNotificationDialog -->
+    <string name="task_deadline">Task Deadline:</string>
+    <string name="remaining_time">Remaining Time:</string>
+    <string name="current_notification">Current Notification:</string>
+    <string name="none">None</string>
+    <string name="invalid_deadline">Invalid deadline</string>
+    <string name="deadline_passed">Deadline has passed.</string>
+
+    <!-- Input Field Hints -->
+    <string name="enter_days">Please enter the number of days.</string>
+    <string name="enter_hours">Please enter the number of hours.</string>
+    <string name="enter_minutes">Please enter the number of minutes.</string>
+
+    <!-- Error Messages -->
+    <string name="invalid_notification_time">Please enter a valid notification time.</string>
+    <string name="notification_time_future">Notification time must be in the future.</string>
+
+    <!-- Buttons -->
+    <string name="save">Save</string>
+    <string name="cancel">Cancel</string>
+
+    <!-- Toast Messages -->
+    <string name="notification_set_success">Notification has been set successfully!</string>
+    <string name="notification_set_failed">Failed to set the notification.</string>
+
+
 </resources>

@@ -39,6 +39,7 @@ public class TaskItemAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolde
         void onDeleteClick(Task task);
         void onEmailClick(Task task);
         void onCompletedClick(Task task);
+        void onAddNotificationClick(Task task);
     }
 
     /**
@@ -134,7 +135,8 @@ public class TaskItemAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolde
         private final ImageView taskEdit;
         private final ImageView taskDelete;
         private final ImageView taskEmail;
-//        private final CheckBox taskCompleted;
+        private final ImageView taskReminder;
+        private final CheckBox taskCompleted;
         private Task currentTask;
 
         public TaskViewHolder(@NonNull View itemView, final OnItemClickListener listener) {
@@ -147,7 +149,8 @@ public class TaskItemAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolde
             taskEdit = itemView.findViewById(R.id.task_edit);
             taskDelete = itemView.findViewById(R.id.task_delete);
             taskEmail = itemView.findViewById(R.id.task_email);
-//            taskCompleted = itemView.findViewById(R.id.task_completed);
+            taskReminder = itemView.findViewById(R.id.task_reminder_icon);
+            taskCompleted = itemView.findViewById(R.id.task_checkbox);
             setupClickListeners(listener);
 
         }
@@ -159,6 +162,7 @@ public class TaskItemAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolde
             taskDueDate.setText("Due: " + task.getDueDate() + " " + task.getDueTime());
             taskPriority.setText("Priority: " + task.getPriority());
             taskStatus.setText(task.isCompleted() ? "Status: Completed" : "Status: Incomplete");
+            taskCompleted.setChecked(task.isCompleted());
 
             // Set priority background color based on priority level
             int priorityColor = 0;
@@ -199,11 +203,17 @@ public class TaskItemAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolde
                     listener.onEmailClick(currentTask);
                 }
             });
-//            taskCompleted.setOnClickListener(v -> {
-//                if (listener != null && currentTask != null) {
-//                    listener.onCompletedClick(currentTask);
-//                }
-//            });
+            taskCompleted.setOnClickListener(v -> {
+                if (listener != null && currentTask != null) {
+                    listener.onCompletedClick(currentTask);
+                }
+            });
+            taskReminder.setOnClickListener(v -> {
+                if (listener != null && currentTask != null) {
+                    listener.onAddNotificationClick(currentTask);
+                }
+            });
+
         }
     }
 

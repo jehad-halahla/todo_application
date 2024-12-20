@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:padding="16dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
+
+        <!-- Task Deadline -->
+        <TextView
+            android:id="@+id/tv_deadline"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:paddingBottom="8dp"
+            android:text="Task Deadline: YYYY-MM-DD HH:MM"
+            android:textAppearance="?android:attr/textAppearanceMedium" />
+
+        <!-- Remaining Time -->
+        <TextView
+            android:id="@+id/tv_remaining_time"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:paddingBottom="8dp"
+            android:text="Remaining Time: X days Y hours Z minutes"
+            android:textAppearance="?android:attr/textAppearanceSmall" />
+
+        <!-- Current Notification -->
+        <TextView
+            android:id="@+id/tv_current_notification"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:paddingBottom="8dp"
+            android:text="Current Notification: None"
+            android:textAppearance="?android:attr/textAppearanceSmall" />
+
+        <!-- Input Fields for Days, Hours, and Minutes -->
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/til_days"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Days Before">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/et_days"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:inputType="number" />
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/til_hours"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Hours Before">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/et_hours"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:inputType="number" />
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/til_minutes"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Minutes Before">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/et_minutes"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:inputType="number" />
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <!-- Buttons for Save and Cancel -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:gravity="end"
+            android:orientation="horizontal">
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btn_cancel_notification"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:backgroundTint="?attr/colorError"
+                android:text="Cancel"
+                android:textAllCaps="false" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btn_save_notification"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="8dp"
+                android:backgroundTint="?attr/colorSecondary"
+                android:text="Save"
+                android:textAllCaps="false" />
+        </LinearLayout>
+
+    </LinearLayout>
+
+</ScrollView>

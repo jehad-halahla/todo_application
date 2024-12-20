@@ -37,7 +37,7 @@ public abstract class BaseTaskFragment extends Fragment implements TaskItemAdapt
     protected TaskItemAdapter taskItemAdapter;
     protected List<Task> taskList = new ArrayList<>();
 
-    private DatabaseHelper dbHelper;
+    protected DatabaseHelper dbHelper;
 
     /**
      * Subclasses must implement this to provide the filter type.
@@ -112,7 +112,12 @@ public abstract class BaseTaskFragment extends Fragment implements TaskItemAdapt
     public void onEditClick(Task task) {
         // Handle edit action (common implementation)
         Toast.makeText(getContext(), "Edit Task: " + task.getTitle(), Toast.LENGTH_SHORT).show();
-        // TODO: Implement editing functionality (e.g., open a dialog or navigate to an edit screen)
+        HomeActivity homeActivity = (HomeActivity) getActivity();
+        if (homeActivity == null) {
+            Log.e("BaseTaskFragment", "HomeActivity is null.");
+            return;
+        }
+        homeActivity.showEditTaskDialog(task);
     }
 
     /**
@@ -228,9 +233,27 @@ public abstract class BaseTaskFragment extends Fragment implements TaskItemAdapt
     }
 
     public void onCompletedClick(Task task) {
-        //check if the box is clicked, if so then mark the task as completed
-
+        //check if the box is checked, if it is, then set the task to completed, if it is not, then set it to not completed
+        if (task.isCompleted()) {
+            task.setCompleted(false);
+        } else {
+            task.setCompleted(true);
+        }
+        dbHelper.updateCompletedState(task);
+        //notify adapter
+        //now reload the task list
+        refreshTasks();
     }
+
+    public void onAddNotificationClick(Task task) {
+        // Handle add notification action (common implementation)
+        HomeActivity homeActivity = (HomeActivity) getActivity();
+        if (homeActivity == null) {
+            Log.e("BaseTaskFragment", "HomeActivity is null.");
+            return;
+        }
+        homeActivity.onAddNotificationClick(task);
+        }
 
     /**
      * Refreshes the task list when notified by HomeActivity.

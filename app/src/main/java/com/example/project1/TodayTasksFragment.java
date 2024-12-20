@@ -1,5 +1,7 @@
 package com.example.project1;
 
+import android.widget.Toast;
+
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
@@ -36,8 +38,23 @@ public class TodayTasksFragment extends BaseTaskFragment {
         return false;
     }
 
-    /**
-     * Optionally, override onEditClick or onDeleteClick if specific behavior is needed.
-     */
+    @Override
+    public void onCompletedClick(Task task) {
+        super.onCompletedClick(task);
+        //if all today tasks are completed, then a toast message should be displayed
+        if (taskList.isEmpty()) {
+//            Toast.makeText(getContext(), "All today tasks are completed", Toast.LENGTH_SHORT).show();
+            showDoneDialog();
+        }
+
+    }
+
+
+    private void showDoneDialog() {
+        HomeActivity homeActivity = (HomeActivity) getActivity();
+        if (homeActivity != null) {
+            homeActivity.showDoneDialog();
+        }
+    }
 
 }

@@ -45,6 +45,7 @@
             android:textSize="14sp" />
 
         <!-- Priority Level -->
+
         <TextView
             android:id="@+id/task_priority"
             android:layout_width="wrap_content"
@@ -59,13 +60,27 @@
             />
 
         <!-- Completion Status -->
-        <TextView
-            android:id="@+id/task_status"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="4dp"
-            android:text="Status: Incomplete"
-            android:textSize="14sp" />
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:orientation="horizontal">
+
+            <CheckBox
+                android:id="@+id/task_checkbox"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="done" />
+
+            <TextView
+                android:id="@+id/task_status"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:text="Status: Incomplete"
+                android:textSize="14sp" />
+
+        </LinearLayout>
 
         <!-- Reminder Icon -->
         <ImageView
