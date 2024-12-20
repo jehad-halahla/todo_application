@@ -14,6 +14,7 @@ import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.EditText;
+import android.widget.SearchView;
 import android.widget.Spinner;
 import android.widget.Toast;
 import android.widget.TextView;
@@ -62,36 +63,49 @@ public class HomeActivity extends AppCompatActivity implements ConnectionAsyncTa
 
     private BaseTaskFragment currentFragment;
 
+    private FragmentManager fragmentManager;
+
+    AllTasksFragment allTasksFragment ;
+    CompletedTasksFragment completedTasksFragment ;
+    TodayTasksFragment todayTasksFragment ;
+
+
     // Data Lists
     private final List<Task> originalTaskList = new ArrayList<>();  // Holds all tasks
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_home);
+        dbHelper = DatabaseHelper.getInstance(this);
 
         // Retrieve user details from SharedPreferences
         SharedPreferences sharedPreferences = getSharedPreferences("LoginPrefs", MODE_PRIVATE);
         userName = sharedPreferences.getString("userName", "User Name"); // Default value if not found
         userEmail = sharedPreferences.getString("userEmail", "user@example.com"); // Default value if not found
-
         // Initialize UI components
+
         initializeUIComponents();
+        loadDatabase();
+        initializeFragments();
 
         // Set default fragment
         if (savedInstanceState == null) {
             navigationView.setCheckedItem(R.id.nav_today);
-            loadFragment(TodayTasksFragment.newInstance());
+            loadFragment(todayTasksFragment);
             setTitle(navigationView.getMenu().findItem(R.id.nav_today).getTitle());
+            notifyFragmentsDataChanged();
+
+        }
+        else{
+            loadFragment(currentFragment);
+            setTitle(currentFragment.getFilterType());
         }
 
         // Set FloatingActionButton click listener to add a new task
         floatingActionButton.setOnClickListener(v -> populateTasks());
-        //read the tasks from the database
-        dbHelper = DatabaseHelper.getInstance(this);
-        //read the tasks from the database
-        loadDatabase();
-//        dbHelper.deleteTasksByUser(userEmail);
+
     }
 
     /**
@@ -129,6 +143,27 @@ public class HomeActivity extends AppCompatActivity implements ConnectionAsyncTa
         navUserEmail.setText(userEmail);
     }
 
+
+    private void initializeFragments() {
+        fragmentManager = getSupportFragmentManager();
+
+        todayTasksFragment = TodayTasksFragment.newInstance();
+        allTasksFragment = AllTasksFragment.newInstance();
+        completedTasksFragment = CompletedTasksFragment.newInstance();
+
+        // Add the fragments to the fragment manager but hide all except the current one
+        fragmentManager.beginTransaction()
+                .add(R.id.fragment_container, allTasksFragment, "AllTasks")
+                .hide(allTasksFragment)
+                .add(R.id.fragment_container, completedTasksFragment, "CompletedTasks")
+                .hide(completedTasksFragment)
+                .add(R.id.fragment_container, todayTasksFragment, "TodayTasks")
+                .commit();
+
+        // Set the initial fragment to TodayTasksFragment
+        currentFragment = todayTasksFragment;
+    }
+
     /**
      * Sets up the NavigationView's item selection listener to load appropriate Fragments.
      */
@@ -140,7 +175,8 @@ public class HomeActivity extends AppCompatActivity implements ConnectionAsyncTa
 
                 switch (menuItem.getItemId()) {
                     case R.id.nav_today:
-                        currentFragment = TodayTasksFragment.newInstance();
+                        currentFragment = todayTasksFragment;
+
                         filterTitle = getString(R.string.nav_today);
                         break;
                     case R.id.nav_new_task:
@@ -150,11 +186,11 @@ public class HomeActivity extends AppCompatActivity implements ConnectionAsyncTa
                         drawerLayout.closeDrawer(GravityCompat.START);
                         return true; // Early return since we're not loading a fragment
                     case R.id.nav_all:
-                        currentFragment = AllTasksFragment.newInstance();
+                        currentFragment = allTasksFragment;
                         filterTitle = getString(R.string.nav_all);
                         break;
                     case R.id.nav_completed:
-                        currentFragment = CompletedTasksFragment.newInstance();
+                        currentFragment = completedTasksFragment;
                         filterTitle = getString(R.string.nav_completed);
                         break;
                     case R.id.nav_search:
@@ -178,6 +214,7 @@ public class HomeActivity extends AppCompatActivity implements ConnectionAsyncTa
 
                 if (currentFragment != null) {
                     loadFragment(currentFragment);
+                    notifyFragmentsDataChanged();
                     setTitle(filterTitle);
                 }
 
@@ -194,9 +231,15 @@ public class HomeActivity extends AppCompatActivity implements ConnectionAsyncTa
      * @param fragment The Fragment to load.
      */
     private void loadFragment(Fragment fragment) {
-        FragmentManager fragmentManager = getSupportFragmentManager();
+
+        //hide all fragments
+        for (Fragment f : fragmentManager.getFragments()) {
+            fragmentManager.beginTransaction()
+                    .hide(f)
+                    .commit();
+        }
         fragmentManager.beginTransaction()
-                .replace(R.id.fragment_container, fragment)
+                .show(fragment)
                 .commit();
     }
 
@@ -226,7 +269,6 @@ public class HomeActivity extends AppCompatActivity implements ConnectionAsyncTa
 
         // Navigate to LoginActivity and clear the back stack
         Intent intent = new Intent(HomeActivity.this, LoginActivity.class);
-//        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
         startActivity(intent);
         finish();
     }
@@ -245,16 +287,9 @@ public class HomeActivity extends AppCompatActivity implements ConnectionAsyncTa
     public void onSuccess(List<Task> tasks) {
         if (tasks != null) {
             for (Task task : tasks) {
-                task.setUserEmail(userEmail);
-            }
-            originalTaskList.addAll(tasks);
-            removeDuplicateTasks(originalTaskList);
-            // Notify active Fragments to refresh their data
-            for (Task task : originalTaskList) {
-                //set the user email to this user email
-                task.setUserEmail(userEmail);
+                task.setUserEmail(getUserEmail());
+                //write to db
                 dbHelper.addTask(task);
-                Log.d("HomeActivity", "populateTasks: " + task.getTitle());
             }
             notifyFragmentsDataChanged();
         } else {
@@ -283,68 +318,29 @@ public class HomeActivity extends AppCompatActivity implements ConnectionAsyncTa
      * @param newTask The Task object to add.
      */
     private void addNewTask(Task newTask) {
-        newTask.setUserEmail(userEmail);
+        newTask.setUserEmail(getUserEmail());
         newTask.setDueTime("12:00");
-        originalTaskList.add(newTask);
-        removeDuplicateTasks(originalTaskList);
+        dbHelper.addTask(newTask);
         notifyFragmentsDataChanged();
         Toast.makeText(this, "New Task Added", Toast.LENGTH_SHORT).show();
 
         // TODO: Implement persistent storage (e.g., save to database)
         //save to database
-        DatabaseHelper dbHelper = DatabaseHelper.getInstance(this);
-        dbHelper.addTask(newTask);
-    }
 
-    /**
-     * Handles the deletion of a task from the original task list and notifies Fragments.
-     *
-     * @param task The Task object to delete.
-     */
-    public void deleteTask(Task task) {
-//        originalTaskList.remove(task);
-        int i = originalTaskList.indexOf(task);
-        notifyFragmentsDataChanged(i);
-        Toast.makeText(this, "Deleted Task: " + task.getTitle(), Toast.LENGTH_SHORT).show();
-
-        // TODO: Implement deletion from persistent storage (e.g., remove from database)
     }
 
     /**
      * Notifies all active Fragments to refresh their task lists when fragment loaded.
      */
     private void notifyFragmentsDataChanged() {
-        FragmentManager fragmentManager = getSupportFragmentManager();
         List<Fragment> fragments = fragmentManager.getFragments();
 
         for (Fragment fragment : fragments) {
-            if (fragment instanceof BaseTaskFragment) {
+            if (fragment instanceof BaseTaskFragment && fragment != null) {
                 ((BaseTaskFragment) fragment).refreshTasks();
             }
         }
     }
-
-    private void notifyFragmentsDataChanged(int i) {
-        // Ensure the current fragment is an instance of BaseTaskFragment
-        if (currentFragment != null && currentFragment instanceof BaseTaskFragment) {
-            // Call the fragment's refreshTasks method to handle deletion
-            currentFragment.refreshTasks(i);
-
-            // Debug log for confirmation
-            Log.d("HomeActivity", "Task at index " + i + " removed. Notified fragment.");
-        } else {
-            Log.e("HomeActivity", "Current fragment is null or not a BaseTaskFragment.");
-        }
-
-        // Remove the task from the originalTaskList to keep data consistent
-        if (i >= 0 && i < originalTaskList.size()) {
-            originalTaskList.remove(i);
-            Log.d("HomeActivity", "Task at index " + i + " removed from originalTaskList.");
-        } else {
-            Log.e("HomeActivity", "Invalid index " + i + " for task removal.");
-        }
-    }
-
 
     /**
      * Shows a dialog to add a new task.
@@ -471,54 +467,29 @@ public class HomeActivity extends AppCompatActivity implements ConnectionAsyncTa
         }
     }
 
-    /**
-     * Public method to retrieve the original task list.
-     *
-     * @return The list of all tasks.
-     */
-    public List<Task> getOriginalTaskList() {
-        return originalTaskList;
-    }
-
-    /**
-     * Retrieves a filtered list of tasks based on the provided filter criteria.
-     *
-     * @param filter The filter criteria ("Today", "All", "Completed")
-     * @return A list of tasks matching the filter.
-     */
-    public List<Task> getFilteredTaskList(String filter) {
-        List<Task> filteredList = new ArrayList<>();
-
-        switch (filter) {
-            case "Today":
-                // Get today's date dynamically
-                SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());
-                String todayDate = sdf.format(new Date());
-                for (Task task : originalTaskList) {
-                    if (task.getDueDate().startsWith(todayDate) && !task.isCompleted()) {
-                        filteredList.add(task);
-                    }
-                }
-                break;
-            case "Completed":
-                for (Task task : originalTaskList) {
-                    if (task.isCompleted()) {
-                        filteredList.add(task);
-                    }
-                }
-                break;
-            case "All":
-            default:
-                filteredList.addAll(originalTaskList);
-                break;
-        }
-
-        return filteredList;
-    }
     @Override
     public boolean onCreateOptionsMenu(android.view.Menu menu) {
         MenuInflater inflater = getMenuInflater();
         inflater.inflate(R.menu.tool_bar_menu, menu); // Inflate the menu; this adds items to the action bar if it is present.
+        MenuItem searchItem = menu.findItem(R.id.action_search);
+        SearchView searchView = (SearchView) searchItem.getActionView();
+
+        searchView.setQueryHint("Search for a keyword..");
+        searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
+            @Override
+            public boolean onQueryTextSubmit(String query) {
+                // Handle search query submission
+                searchForKeyword(query);
+                return false;
+            }
+
+            @Override
+            public boolean onQueryTextChange(String newText) {
+                // Handle text changes for live suggestions or filtering
+                searchForKeyword(newText);
+                return false;
+            }
+        });
         return true;
     }
     @Override
@@ -528,24 +499,47 @@ public class HomeActivity extends AppCompatActivity implements ConnectionAsyncTa
             case R.id.action_search:
                 // Show toast message when search icon is clicked
                 Toast.makeText(this, "Search icon clicked!", Toast.LENGTH_SHORT).show();
+
+                return true;
+            case R.id.action_sort:
+                Toast.makeText(this, "Sort icon clicked!", Toast.LENGTH_SHORT).show();
+                sortTasks();
                 return true;
             default:
                 return super.onOptionsItemSelected(item);
         }
     }
     private void loadDatabase() {
-        List<Task> tasks = dbHelper.getTasksByUser(userEmail);
+        List<Task> tasks;
+        dbHelper = DatabaseHelper.getInstance(this);
+        tasks = dbHelper.getTasksByUser(userEmail);
         Log.d("HomeActivity", "loadDatabase: " + tasks.size());
-        //here we will read all tasks related to this user from the database
-        originalTaskList.addAll(tasks);
-        //remove dupes
-        removeDuplicateTasks(originalTaskList);
+
     }
 
-    private void removeDuplicateTasks(List<Task> taskList) {
-        Set<Task> uniqueTasks = new HashSet<>(taskList);
-        taskList.clear();
-        taskList.addAll(uniqueTasks);
+    private void sortTasks() {
+        //call a sort function in the current fragment
+        if (currentFragment != null) {
+            currentFragment.sortTasks();
+        }
+    }
+
+    private void searchForKeyword(String keyword) {
+        if (currentFragment != null) {
+            currentFragment.searchByKeyWord(keyword);
+        }
+    }
+
+
+    private void filterUsingDateRange(Date startDate, Date endDate){
+        //call a filter function in the current fragment
+        if (currentFragment != null) {
+            currentFragment.filterUsingDateRange(startDate, endDate);
+        }
+    }
+
+    public String getUserEmail() {
+        return userEmail;
     }
 
 

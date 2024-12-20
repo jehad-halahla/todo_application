@@ -17,8 +17,14 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Toast;
 
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Date;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.TreeMap;
 
@@ -29,7 +35,7 @@ public abstract class BaseTaskFragment extends Fragment implements TaskItemAdapt
 
     protected RecyclerView recyclerView;
     protected TaskItemAdapter taskItemAdapter;
-    protected List<Task> taskList;
+    protected List<Task> taskList = new ArrayList<>();
 
     private DatabaseHelper dbHelper;
 
@@ -70,14 +76,21 @@ public abstract class BaseTaskFragment extends Fragment implements TaskItemAdapt
 
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
+        dbHelper = DatabaseHelper.getInstance(getContext());
         super.onViewCreated(view, savedInstanceState);
         recyclerView = view.findViewById(getRecyclerViewId());
         recyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
 
+
         if (getActivity() instanceof HomeActivity) {
             HomeActivity homeActivity = (HomeActivity) getActivity();
-            taskList = homeActivity.getFilteredTaskList(getFilterType());
-
+            dbHelper = DatabaseHelper.getInstance(getContext());
+            if (dbHelper == null) {
+                Log.e("BaseTaskFragment", "DatabaseHelper is null.");
+                return;
+            }
+            taskList =  getFilteredTaskList(dbHelper.getTasksByUser(homeActivity.getUserEmail()));
+            //notify adapter
             if (isGrouped()) {
                 Log.d("Preparing grouped tasks", "Preparing grouped tasks");
                 List<Object> groupedTasks = prepareGroupedTasks(taskList);
@@ -113,7 +126,7 @@ public abstract class BaseTaskFragment extends Fragment implements TaskItemAdapt
             Log.e("BaseTaskFragment", "onDeleteClick: Task is null.");
             return;
         }
-        Log.d("BaseTaskFragment", "onDeleteClick: Task received: " + task.getTitle());
+        Log.d("BaseTaskFragment", "onDeleteClick: Task received: " + task.getTitle() + task.getUserEmail());
         dbHelper = DatabaseHelper.getInstance(getContext());
 //        dbHelper.deleteTask(task);
         if (isGrouped()) {
@@ -122,6 +135,15 @@ public abstract class BaseTaskFragment extends Fragment implements TaskItemAdapt
         } else {
             // Handle deletion in a non-grouped RecyclerView
             handleUngroupedTaskDeletion(task);
+        }
+
+        boolean done = dbHelper.deleteTask(task);
+        if (!done) {
+            Log.e("BaseTaskFragment", "onDeleteClick: Task deletion failed.");
+        }
+        else {
+            Log.d("BaseTaskFragment", "onDeleteClick: Task deletion successful.");
+
         }
     }
 
@@ -139,6 +161,7 @@ public abstract class BaseTaskFragment extends Fragment implements TaskItemAdapt
             if (groupedItems.get(i) instanceof Task && groupedItems.get(i).equals(task)) {
                 taskIndex = i;
                 groupedItems.remove(i);
+                taskItemAdapter.notifyItemRemoved(i);
                 break;
             }
         }
@@ -171,12 +194,6 @@ public abstract class BaseTaskFragment extends Fragment implements TaskItemAdapt
             }
         }
 
-        // Remove the task from the global task list
-        if (getActivity() instanceof HomeActivity) {
-            HomeActivity homeActivity = (HomeActivity) getActivity();
-            homeActivity.deleteTask(task);
-        }
-
         Log.d("BaseTaskFragment", "Grouped task deleted: " + task.getTitle());
     }
 
@@ -184,26 +201,16 @@ public abstract class BaseTaskFragment extends Fragment implements TaskItemAdapt
      * Handles deletion of a task in an ungrouped RecyclerView.
      */
     private void handleUngroupedTaskDeletion(Task task) {
+
         int taskIndex = taskList.indexOf(task);
 
         if (taskIndex >= 0) {
-            // Remove the task from the taskList
-            taskList.remove(taskIndex);
-
-            // Notify the adapter about the item removal
-            taskItemAdapter.notifyItemRemoved(taskIndex);
-            taskItemAdapter.notifyItemRangeChanged(taskIndex, taskList.size());
-
-            // Remove the task from the global task list
-            if (getActivity() instanceof HomeActivity) {
-                HomeActivity homeActivity = (HomeActivity) getActivity();
-                homeActivity.deleteTask(task);
-            }
-
-            Log.d("BaseTaskFragment", "Ungrouped task deleted: " + task.getTitle());
+            taskList.remove(taskIndex); // Remove task from list
+            taskItemAdapter.notifyItemRemoved(taskIndex); // Notify adapter
         } else {
-            Log.e("BaseTaskFragment", "Task not found in taskList for ungrouped deletion.");
+            Log.e("BaseTaskFragment", "Task not found or invalid index for ungrouped deletion.");
         }
+
     }
 
 
@@ -231,7 +238,13 @@ public abstract class BaseTaskFragment extends Fragment implements TaskItemAdapt
     public void refreshTasks() {
         if (getActivity() instanceof HomeActivity) {
             HomeActivity homeActivity = (HomeActivity) getActivity();
-            taskList = homeActivity.getFilteredTaskList(getFilterType()); // Refresh task list
+            dbHelper = DatabaseHelper.getInstance(getContext());
+            if (dbHelper == null) {
+                Log.e("BaseTaskFragment", "DatabaseHelper is null.");
+                return;
+            }
+            taskList = getFilteredTaskList(dbHelper.getTasksByUser(homeActivity.getUserEmail()));
+            Log.d("BaseTaskFragment", "refreshTasks: " + homeActivity.getUserEmail());
 
             if (isGrouped()) {
                 List<Object> groupedTasks = prepareGroupedTasks(taskList); // Regroup tasks
@@ -242,25 +255,35 @@ public abstract class BaseTaskFragment extends Fragment implements TaskItemAdapt
         }
     }
 
-    /**
-     * Refreshes the task list when notified by HomeActivity.
-     */
-    public void refreshTasks(int i) {
-        if (i >= 0 && i < taskList.size()) {
-            // Remove the task from the taskList
-            taskList.remove(i);
 
-            // Notify the adapter about the item removal
-            taskItemAdapter.notifyItemRemoved(i);
-            taskItemAdapter.notifyItemRangeChanged(i, taskList.size());
+    private List<Task> getFilteredTaskList(List<Task> unfilteredList) {
+        List<Task> filteredList = new ArrayList<>();
 
-            // Debug log for confirmation
-            Log.d("BaseTaskFragment", "Task at index " + i + " removed from taskList and adapter notified.");
-        } else {
-            Log.e("BaseTaskFragment", "Invalid index " + i + " for task removal.");
+        switch (getFilterType()) {
+            case "Today":
+                // Get today's date dynamically
+                SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());
+                String todayDate = sdf.format(new Date());
+                for (Task task : unfilteredList) {
+                    if (task.getDueDate().startsWith(todayDate) && !task.isCompleted()) {
+                        filteredList.add(task);
+                    }
+                }
+                break;
+            case "Completed":
+                for (Task task : unfilteredList) {
+                    if (task.isCompleted()) {
+                        filteredList.add(task);
+                    }
+                }
+                break;
+            case "All":
+            default:
+                filteredList.addAll(unfilteredList);
+                break;
         }
+        return filteredList;
     }
-
 
 
     private List<Object> prepareGroupedTasks(List<Task> tasks) {
@@ -282,24 +305,62 @@ public abstract class BaseTaskFragment extends Fragment implements TaskItemAdapt
         return groupedList;
     }
 
-    public void notifyTaskListChanged() {
-        if (getActivity() instanceof HomeActivity) {
+
+    public void sortTasks() {
+        if(getActivity() instanceof HomeActivity){
             HomeActivity homeActivity = (HomeActivity) getActivity();
-            List<Task> updatedTasks = homeActivity.getFilteredTaskList(getFilterType());
-
+            dbHelper = DatabaseHelper.getInstance(getContext());
+            if (dbHelper == null) {
+                Log.e("BaseTaskFragment", "DatabaseHelper is null.");
+                return;
+            }
+            taskList = getFilteredTaskList(dbHelper.getTasksByUser(homeActivity.getUserEmail()));
+            //sort list by priority
+            Collections.sort(taskList);
             if (isGrouped()) {
-                List<Object> groupedTasks = prepareGroupedTasks(updatedTasks);
-                taskItemAdapter.updateList(groupedTasks, true); // Notify grouped changes
+                List<Object> groupedTasks = prepareGroupedTasks(taskList); // Regroup tasks
+                taskItemAdapter.updateList(groupedTasks, true); // Update adapter with grouped tasks
             } else {
-                DiffUtil.Callback diffCallback = new TaskDiffCallback(taskList, updatedTasks);
-                DiffUtil.DiffResult diffResult = DiffUtil.calculateDiff(diffCallback);
-
-                taskList.clear();
-                taskList.addAll(updatedTasks);
-
-                diffResult.dispatchUpdatesTo(taskItemAdapter); // Notify granular changes
+                taskItemAdapter.updateList(taskList, false); // Update adapter with ungrouped tasks
             }
         }
     }
 
+    public void searchByKeyWord(String keyword){
+        //search for keyword in task list
+        if(getActivity() instanceof HomeActivity){
+            HomeActivity homeActivity = (HomeActivity) getActivity();
+            dbHelper = DatabaseHelper.getInstance(getContext());
+            if (dbHelper == null) {
+                Log.e("BaseTaskFragment", "DatabaseHelper is null.");
+                return;
+            }
+            taskList = getFilteredTaskList(dbHelper.getTasksByUser(homeActivity.getUserEmail()));
+
+//            for (Task task : taskList) {
+//                if (!task.getTitle().toLowerCase().contains(keyword.toLowerCase()) && !task.getDescription().toLowerCase().contains(keyword.toLowerCase())) {
+//                    taskList.remove(task);
+//                }
+//            }
+            Iterator<Task> iterator = taskList.iterator();
+            while (iterator.hasNext()) {
+                Task task = iterator.next();
+                if (!task.getTitle().toLowerCase().contains(keyword.toLowerCase()) && !task.getDescription().toLowerCase().contains(keyword.toLowerCase())) {
+                    iterator.remove();
+                }
+            }
+
+            if (isGrouped()) {
+                List<Object> groupedTasks = prepareGroupedTasks(taskList); // Regroup tasks
+                taskItemAdapter.updateList(groupedTasks, true); // Update adapter with grouped tasks
+            } else {
+                taskItemAdapter.updateList(taskList, false); // Update adapter with ungrouped tasks
+            }
+        }
+    }
+
+    public void filterUsingDateRange(Date startDate, Date endDate) {
+
+
+    }
 }

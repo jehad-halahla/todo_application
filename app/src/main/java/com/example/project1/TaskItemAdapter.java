@@ -9,6 +9,7 @@ import android.widget.ImageView;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
+import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.project1.R;
@@ -147,8 +148,8 @@ public class TaskItemAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolde
             taskDelete = itemView.findViewById(R.id.task_delete);
             taskEmail = itemView.findViewById(R.id.task_email);
 //            taskCompleted = itemView.findViewById(R.id.task_completed);
-
             setupClickListeners(listener);
+
         }
 
         public void bind(Task task) {
@@ -158,6 +159,26 @@ public class TaskItemAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolde
             taskDueDate.setText("Due: " + task.getDueDate() + " " + task.getDueTime());
             taskPriority.setText("Priority: " + task.getPriority());
             taskStatus.setText(task.isCompleted() ? "Status: Completed" : "Status: Incomplete");
+
+            // Set priority background color based on priority level
+            int priorityColor = 0;
+            switch (task.getPriority()) {
+                case "High":
+                    priorityColor = ContextCompat.getColor(itemView.getContext(), R.color.cute_red); // High priority
+                    taskPriority.setBackgroundColor(priorityColor);
+                    break;
+                case "Medium":
+                    priorityColor = ContextCompat.getColor(itemView.getContext(), R.color.yellow); // Medium priority
+                    taskPriority.setBackgroundColor(priorityColor);
+
+                    break;
+                case "Low":
+                    priorityColor = ContextCompat.getColor(itemView.getContext(), R.color.green_500); // Low priority
+                    taskPriority.setBackgroundColor(priorityColor);
+
+                    break;
+            }
+
         }
 
         private void setupClickListeners(final OnItemClickListener listener) {
@@ -185,5 +206,7 @@ public class TaskItemAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolde
 //            });
         }
     }
+
+
 }
 

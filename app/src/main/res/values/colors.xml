@@ -29,6 +29,8 @@
     <color name="green_100">#DCEDC8</color>
     <color name="green_50">#F1F8E9</color>
 
+    <color name="yellow">#FFEB3B</color>
+
     <color name="cute_red">#FD5151</color>
 
 </resources>

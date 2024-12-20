@@ -50,8 +50,13 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="4dp"
+            android:background="@drawable/priority_high"
+            android:paddingStart="10dp"
+            android:paddingEnd="10dp"
             android:text="Priority: High"
-            android:textSize="14sp" />
+            android:textSize="14sp"
+            android:textColor="@color/white"
+            />
 
         <!-- Completion Status -->
         <TextView

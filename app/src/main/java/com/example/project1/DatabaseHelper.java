@@ -185,10 +185,13 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         return exists;
     }
 
-    public boolean deleteTask(int taskID) {
+    public boolean deleteTask(Task task) {
         SQLiteDatabase db = this.getWritableDatabase();
-        int rows = db.delete(TABLE_TASK, COLUMN_TASK_ID + " = ?", new String[]{String.valueOf(taskID)});
+       //condition for delete is that the task title and user email must match
+        Log.d("DatabaseHelper", "Deleting task with title: " + task.getTitle() + " and user email: " + task.getUserEmail());
+        int rows = db.delete(TABLE_TASK, COLUMN_TASK_TITLE + " = ? AND " + COLUMN_USER_EMAIL + " = ?", new String[]{task.getTitle(), task.getUserEmail()});
         db.close();
+        Log.d("DatabaseHelper", "Deleted " + rows + " tasks with title: " + task.getTitle());
         return rows > 0;
     }
 
@@ -218,6 +221,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                 task.setDueTime(cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_DUE_TIME)));
                 task.setPriority(cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_PRIORITY)));
                 task.setCompleted(cursor.getInt(cursor.getColumnIndexOrThrow(COLUMN_IS_COMPLETED)) == 1);
+                task.setUserEmail(cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_USER_EMAIL)));
                 ret.add(task);
             } while (cursor.moveToNext());
         }
