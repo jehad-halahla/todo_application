@@ -2,7 +2,7 @@
     android:shape="oval">
 
     <!-- Green Color for the Background -->
-    <solid android:color="#09D1C7" />
+    <solid android:color="?attr/colorPrimary" />
 
     <!-- Optional: Add padding if needed -->
     <padding
@@ -11,8 +11,4 @@
         android:right="4dp"
         android:bottom="4dp" />
 
-    <!-- Optional: Add border -->
-<!--    <stroke-->
-<!--        android:width="2dp"-->
-<!--        android:color="#007B6C" />-->
 </shape>

@@ -287,4 +287,58 @@ public class DatabaseHelper extends SQLiteOpenHelper {
             }
         }
     }
+
+    public boolean updateEmailSafely(String newEmail, String oldEmail, String currentPassword) {
+        SQLiteDatabase db = this.getWritableDatabase();
+
+        // First, check if the old email and password are correct
+        if (!checkUser(oldEmail, currentPassword)) {
+            return false; // Authentication failed
+        }
+
+        // Check if the new email already exists
+        if (checkEmailExists(newEmail)) {
+            return false; // New email already exists
+        }
+
+        // Start transaction
+        db.beginTransaction();
+        try {
+            ContentValues contentValues = new ContentValues();
+            contentValues.put(COLUMN_EMAIL, newEmail);
+
+            // Update email
+            int updateCount = db.update(TABLE_USER, contentValues, COLUMN_EMAIL + " = ?", new String[]{oldEmail});
+            if (updateCount == 1) {
+                // Update foreign keys in related tables if necessary
+                // For example, updating the UserEmail column in the Task table
+                ContentValues taskValues = new ContentValues();
+                taskValues.put(COLUMN_USER_EMAIL, newEmail);
+                db.update(TABLE_TASK, taskValues, COLUMN_USER_EMAIL + " = ?", new String[]{oldEmail});
+
+                db.setTransactionSuccessful();
+                return true;
+            }
+        } catch (Exception e) {
+            Log.e("DatabaseHelper", "Error updating email: " + e.getMessage(), e);
+        } finally {
+            db.endTransaction();
+            db.close();
+        }
+
+        return false;
+    }
+
+
+    public boolean updatePassword(String newPassword, String email) {
+        SQLiteDatabase db = this.getWritableDatabase();
+
+        ContentValues values = new ContentValues();
+        values.put(COLUMN_PASSWORD, newPassword);
+
+        // Update the password where the email matches
+        int rowsAffected = db.update(TABLE_USER, values, COLUMN_EMAIL + " = ?", new String[]{email});
+
+        return rowsAffected > 0;
+    }
 }

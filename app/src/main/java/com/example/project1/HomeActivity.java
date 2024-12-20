@@ -1,6 +1,7 @@
 package com.example.project1;
 
 import android.app.DatePickerDialog;
+import android.app.TimePickerDialog;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.database.Cursor;
@@ -13,6 +14,7 @@ import android.view.View;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.CheckBox;
+import android.widget.DatePicker;
 import android.widget.EditText;
 import android.widget.SearchView;
 import android.widget.Spinner;
@@ -34,6 +36,8 @@ import com.google.android.material.navigation.NavigationView;
 
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
@@ -68,6 +72,7 @@ public class HomeActivity extends AppCompatActivity implements ConnectionAsyncTa
     AllTasksFragment allTasksFragment ;
     CompletedTasksFragment completedTasksFragment ;
     TodayTasksFragment todayTasksFragment ;
+    //TODO: make a grouped recycler fragment for the search by date result
 
 
     // Data Lists
@@ -195,17 +200,14 @@ public class HomeActivity extends AppCompatActivity implements ConnectionAsyncTa
                         break;
                     case R.id.nav_search:
                         // Implement Search functionality
-                        Toast.makeText(HomeActivity.this, "Search clicked", Toast.LENGTH_SHORT).show();
-                        // TODO: Open Search Activity or Dialog
+                        showDateFilterDialog();
                         break;
                     case R.id.nav_profile:
                         // Implement Profile functionality
-                        Toast.makeText(HomeActivity.this, "Profile clicked", Toast.LENGTH_SHORT).show();
-                        // TODO: Open Profile Activity
+                        navigateEditProfile();
                         break;
                     case R.id.nav_logout:
                         // Implement Logout functionality
-                        Toast.makeText(HomeActivity.this, "Logout clicked", Toast.LENGTH_SHORT).show();
                         logOut();
                         break;
                     default:
@@ -319,7 +321,6 @@ public class HomeActivity extends AppCompatActivity implements ConnectionAsyncTa
      */
     private void addNewTask(Task newTask) {
         newTask.setUserEmail(getUserEmail());
-        newTask.setDueTime("12:00");
         dbHelper.addTask(newTask);
         notifyFragmentsDataChanged();
         Toast.makeText(this, "New Task Added", Toast.LENGTH_SHORT).show();
@@ -354,9 +355,8 @@ public class HomeActivity extends AppCompatActivity implements ConnectionAsyncTa
         EditText editTextTitle = dialogView.findViewById(R.id.edit_text_task_title);
         EditText editTextDescription = dialogView.findViewById(R.id.edit_text_task_description);
         EditText editTextDueDate = dialogView.findViewById(R.id.edit_text_task_due_date);
+        EditText editTextDueTime = dialogView.findViewById(R.id.edit_text_task_due_time);
         Spinner spinnerPriority = dialogView.findViewById(R.id.spinner_task_priority);
-        CheckBox checkBoxCompleted = dialogView.findViewById(R.id.checkbox_is_completed);
-        CheckBox checkBoxReminderSet = dialogView.findViewById(R.id.checkbox_is_reminder_set);
         Button buttonAddTask = dialogView.findViewById(R.id.button_add_task);
         Button buttonCancel = dialogView.findViewById(R.id.button_cancel);
 
@@ -368,6 +368,7 @@ public class HomeActivity extends AppCompatActivity implements ConnectionAsyncTa
 
         // Set a DatePickerDialog when due date EditText is clicked
         editTextDueDate.setOnClickListener(v -> showDatePickerDialog(editTextDueDate));
+        editTextDueTime.setOnClickListener(v -> showTimePicker(editTextDueTime));
 
         // Build the AlertDialog without title and default buttons
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
@@ -382,9 +383,8 @@ public class HomeActivity extends AppCompatActivity implements ConnectionAsyncTa
             String title = editTextTitle.getText().toString().trim();
             String description = editTextDescription.getText().toString().trim();
             String dueDate = editTextDueDate.getText().toString().trim();
+            String dueTime = editTextDueTime.getText().toString().trim();
             String priority = spinnerPriority.getSelectedItem().toString();
-            boolean isCompleted = checkBoxCompleted.isChecked();
-            boolean isReminderSet = checkBoxReminderSet.isChecked();
 
             // Validate inputs
             if (title.isEmpty()) {
@@ -406,15 +406,27 @@ public class HomeActivity extends AppCompatActivity implements ConnectionAsyncTa
                 return;
             }
 
+            if (!isValidTime(dueTime)) {
+                editTextDueTime.setError("Invalid time format. Use HH:MM");
+                editTextDueTime.requestFocus();
+                return;
+            }
+
+            //also make sure the due date is not in the past
+            if(inPast(dueDate+" "+dueTime)){
+                editTextDueDate.setError("Due date cannot be in the past");
+                editTextDueDate.requestFocus();
+                return;
+            }
+
+
             // Create a new Task object
             Task newTask = new Task();
             newTask.setTitle(title);
             newTask.setDescription(description);
             newTask.setDueDate(dueDate);
+            newTask.setDueTime(dueTime);
             newTask.setPriority(priority);
-            newTask.setCompleted(isCompleted);
-//            newTask.setReminderSet(isReminderSet);
-
             // Add the new task to the list
             addNewTask(newTask);
 
@@ -449,6 +461,62 @@ public class HomeActivity extends AppCompatActivity implements ConnectionAsyncTa
 
         datePickerDialog.show();
     }
+    private void showTimePicker(EditText editTextDueTime) {
+        // Get current time
+        final Calendar calendar = Calendar.getInstance();
+        int hour = calendar.get(Calendar.HOUR_OF_DAY);
+        int minute = calendar.get(Calendar.MINUTE);
+
+        // Create TimePickerDialog
+        TimePickerDialog timePickerDialog = new TimePickerDialog(this,
+                (view, selectedHour, selectedMinute) -> {
+                    // Format the time as HH:MM
+                    String formattedTime = String.format(Locale.getDefault(), "%02d:%02d", selectedHour, selectedMinute);
+                    editTextDueTime.setText(formattedTime);
+                }, hour, minute, true); // true for 24-hour format
+
+        timePickerDialog.show();
+    }
+
+    private void showDateFilterDialog() {
+        // Inflate the custom dialog layout
+        LayoutInflater inflater = LayoutInflater.from(this);
+        View dialogView = inflater.inflate(R.layout.filter_by_date, null);
+
+
+        //initalize the UI components
+        DatePicker startDatePicker = dialogView.findViewById(R.id.start_date_picker);
+        DatePicker endDatePicker = dialogView.findViewById(R.id.end_date_picker);
+        Button confirmBtn = dialogView.findViewById(R.id.confirm_btn);
+        Button cancelBtn = dialogView.findViewById(R.id.cancel_btn);
+        // Set up the AlertDialog
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setView(dialogView);
+        AlertDialog dialog = builder.create();
+        dialog.show();
+        confirmBtn.setOnClickListener(v -> {
+            String startDate = getDateFromPicker(startDatePicker);
+            String endDate = getDateFromPicker(endDatePicker);
+            //first make sure start date is before end date
+            if(compareDates(startDate, endDate) > 0){
+                Toast.makeText(this, "Start date must be before end date", Toast.LENGTH_SHORT).show();
+                return;
+            }
+            //convert start date and end date to date objects
+            filterUsingDateRange(startDate, endDate);
+            dialog.dismiss();
+        });
+
+        cancelBtn.setOnClickListener(v -> dialog.dismiss());
+
+    }
+
+    private String getDateFromPicker(DatePicker datePicker){
+        int day = datePicker.getDayOfMonth();
+        int month = datePicker.getMonth()+ 1;//zero indexed
+        int year = datePicker.getYear();
+        return year + "-" + month + "-" + day;
+    }
 
     /**
      * Validates the date format to ensure it matches YYYY-MM-DD.
@@ -463,6 +531,20 @@ public class HomeActivity extends AppCompatActivity implements ConnectionAsyncTa
             Date parsedDate = sdf.parse(date);
             return parsedDate != null;
         } catch (ParseException e) {
+            return false;
+        }
+    }
+
+    private boolean isValidTime(String time) {
+        SimpleDateFormat sdf = new SimpleDateFormat("HH:mm", Locale.getDefault());
+        sdf.setLenient(false); // Disallow lenient parsing
+
+        try {
+            // Parse the input time
+            sdf.parse(time);
+            return true; // If parsing is successful, it's a valid time
+        } catch (ParseException e) {
+            // If parsing fails, it's not a valid time
             return false;
         }
     }
@@ -531,7 +613,7 @@ public class HomeActivity extends AppCompatActivity implements ConnectionAsyncTa
     }
 
 
-    private void filterUsingDateRange(Date startDate, Date endDate){
+    private void filterUsingDateRange(String startDate, String endDate){
         //call a filter function in the current fragment
         if (currentFragment != null) {
             currentFragment.filterUsingDateRange(startDate, endDate);
@@ -542,5 +624,45 @@ public class HomeActivity extends AppCompatActivity implements ConnectionAsyncTa
         return userEmail;
     }
 
+    public int compareDates(String date1, String date2) {
+
+        //init the DataFormatter
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+        LocalDate localDate1 = LocalDate.parse(date1, formatter);
+        LocalDate localDate2 = LocalDate.parse(date2, formatter);
+        return localDate1.compareTo(localDate2);
+    }
+
+    /**
+     *
+     * @param date
+     * @return
+     */
+    public boolean inPast(String date) {
+        try {
+            // Define the date format (adjust to match the input format)
+            SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault());
+            sdf.setLenient(false); // Ensure strict parsing
+
+            // Parse the input date string
+            Date inputDate = sdf.parse(date);
+
+            // Get the current date and time
+            Date now = new Date();
+
+            // Check if the input date is before the current date
+            return inputDate.before(now);
+        } catch (ParseException e) {
+            // Handle parsing errors
+            System.err.println("Invalid date format: " + e.getMessage());
+            return false;
+        }
+    }
+
+    private void navigateEditProfile(){
+        Intent intent = new Intent(HomeActivity.this, ProfileActivity.class);
+        startActivity(intent);
+//        finish();
+    }
 
 }

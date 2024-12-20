@@ -33,8 +33,8 @@
             android:layout_height="48dp"
             android:gravity="center"
             android:text="Log In"
-            android:textColor="#15919B"
             android:textSize="24sp"
+            android:textColor="?attr/colorSecondary"
             android:textStyle="bold" />
 
         <EditText
@@ -50,7 +50,9 @@
             android:padding="8dp"
             android:paddingStart="16dp"
             android:paddingEnd="16dp"
-            android:textColor="#15919B" />
+            android:textColor="#15919B"
+            android:textColorHint="@color/hint_color"
+            />
 
         <EditText
             android:id="@+id/passwordInput"
@@ -62,6 +64,7 @@
             android:drawableEnd="@drawable/outline_password_24"
             android:drawablePadding="8dp"
             android:hint="Your Password"
+            android:textColorHint="@color/hint_color"
             android:inputType="textPassword"
             android:padding="8dp"
             android:paddingStart="16dp"
@@ -97,7 +100,7 @@
             android:id="@+id/loginButton"
             android:layout_width="match_parent"
             android:layout_height="60dp"
-            android:backgroundTint="#09D1C7"
+            android:backgroundTint="?attr/colorSecondaryVariant"
             android:text="Log In"
             android:textColor="@android:color/white" />
 
@@ -108,7 +111,7 @@
             android:layout_gravity="center"
             android:layout_marginTop="16dp"
             android:text="Don’t have an account? Sign Up"
-            android:textColor="#09D1C7"
+            android:textColor="?attr/colorSecondary"
             android:textSize="16sp"
             android:textStyle="bold" />
     </LinearLayout>

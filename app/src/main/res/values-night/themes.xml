@@ -2,16 +2,21 @@
     <!-- Base application theme. -->
     <style name="Theme.Project1" parent="Theme.MaterialComponents.DayNight.NoActionBar">
         <!-- Primary brand color. -->
-        <item name="colorPrimary">@color/purple_200</item>
-        <item name="colorPrimaryVariant">@color/purple_700</item>
+        <item name="colorPrimary">@color/red_200</item>
+        <item name="colorPrimaryVariant">@color/red_500</item>
         <item name="colorOnPrimary">@color/black</item>
         <!-- Secondary brand color. -->
-        <item name="colorSecondary">@color/teal_200</item>
-        <item name="colorSecondaryVariant">@color/teal_200</item>
+        <item name="colorSecondary">@color/purple_200</item>
+        <item name="colorSecondaryVariant">@color/purple_500</item>
         <item name="colorOnSecondary">@color/black</item>
         <!-- Status bar color. -->
         <item name="android:statusBarColor">?attr/colorPrimaryVariant</item>
+        <item name="colorOnBackground">#FFFFFF</item> <!-- White for dark mode -->
+        <item name="colorSurface">#383636</item> <!-- White for light mode -->"
+
         <!-- Customize your theme here. -->
+        <!-- Custom theme attribute for text color -->
+        <item name="hintTextColor">#F4C6C6</item> <!-- Gray for night mode -->
 <!--        adding a color for the delete button-->
     </style>
 </resources>

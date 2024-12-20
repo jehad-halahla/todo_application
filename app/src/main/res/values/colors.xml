@@ -33,4 +33,12 @@
 
     <color name="cute_red">#FD5151</color>
 
+    <color name="cute_blue">#536DFE</color>
+<!--    make some red color variants-->
+    <color name="red_200">#FD6A6A</color>
+    <color name="red_500">#F44336</color>
+    <color name="red_700">#D32F2F</color>
+
+
+
 </resources>

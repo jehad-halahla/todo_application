@@ -359,8 +359,34 @@ public abstract class BaseTaskFragment extends Fragment implements TaskItemAdapt
         }
     }
 
-    public void filterUsingDateRange(Date startDate, Date endDate) {
+    public void filterUsingDateRange(String startDate, String endDate) {
+
+        if(getActivity() instanceof HomeActivity) {
+            HomeActivity homeActivity = (HomeActivity) getActivity();
+            dbHelper = DatabaseHelper.getInstance(getContext());
+            if (dbHelper == null) {
+                Log.e("BaseTaskFragment", "DatabaseHelper is null.");
+                return;
+            }
+            //the current task list, when it has a date between start and end, then we keep it, otherwise we remove it
+            taskList = getFilteredTaskList(dbHelper.getTasksByUser(((HomeActivity) getActivity()).getUserEmail()));
 
 
+            //removing using an itterator
+            Iterator<Task> iterator = taskList.iterator();
+
+            while (iterator.hasNext()) {
+                Task task = iterator.next();
+                if (homeActivity.compareDates(task.getDueDate(), startDate) < 0 || homeActivity.compareDates(task.getDueDate(), endDate) > 0) {
+                    iterator.remove();
+                }
+            }
+            if (isGrouped()) {
+                List<Object> groupedTasks = prepareGroupedTasks(taskList); // Regroup tasks
+                taskItemAdapter.updateList(groupedTasks, true); // Update adapter with grouped tasks
+            } else {
+                taskItemAdapter.updateList(taskList, false); // Update adapter with ungrouped tasks
+            }
+        }
     }
 }
