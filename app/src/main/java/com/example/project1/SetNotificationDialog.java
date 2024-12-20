@@ -151,7 +151,7 @@ public class SetNotificationDialog extends AppCompatDialogFragment {
 
             if (isUpdated) {
                 // Schedule the notification reminder
-                NotificationScheduler.scheduleTaskReminder(getContext(), task);
+                NotificationScheduler.scheduleTaskReminder(getContext(), task, 0);
 
                 Toast.makeText(getContext(), getString(R.string.notification_set_success), Toast.LENGTH_SHORT).show();
                 dismiss();
