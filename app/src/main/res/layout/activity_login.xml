@@ -86,14 +86,6 @@
                 android:textColor="#0C6478"
                 android:textSize="16sp" />
 
-            <TextView
-                android:id="@+id/forgotPassword"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:gravity="end"
-                android:text="Forgotten?"
-                android:textColor="#213A58"
-                android:textSize="16sp" />
         </LinearLayout>
 
         <Button

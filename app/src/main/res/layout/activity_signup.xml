@@ -35,7 +35,7 @@
             android:layout_marginBottom="16dp"
             android:gravity="center"
             android:text="Sign Up"
-            android:textColor="#15919B"
+            android:textColor="?attr/colorSecondary"
             android:textSize="24sp"
             android:textStyle="bold" />
 
@@ -55,7 +55,8 @@
             android:paddingVertical="20dp"
             android:paddingStart="16dp"
             android:paddingEnd="16dp"
-            android:textColor="#15919B" />
+            android:textColor="#15919B"
+            android:textColorHint="@color/hint_color" />
 
         <!-- First Name Input -->
         <EditText
@@ -73,7 +74,8 @@
             android:paddingVertical="20dp"
             android:paddingStart="16dp"
             android:paddingEnd="16dp"
-            android:textColor="#15919B" />
+            android:textColor="#15919B"
+            android:textColorHint="@color/hint_color" />
 
         <!-- Last Name Input -->
         <EditText
@@ -91,7 +93,8 @@
             android:paddingVertical="20dp"
             android:paddingStart="16dp"
             android:paddingEnd="16dp"
-            android:textColor="#15919B" />
+            android:textColor="#15919B"
+            android:textColorHint="@color/hint_color" />
 
         <!-- Password Input -->
         <EditText
@@ -110,7 +113,8 @@
             android:paddingVertical="20dp"
             android:paddingStart="16dp"
             android:paddingEnd="16dp"
-            android:textColor="#15919B" />
+            android:textColor="#15919B"
+            android:textColorHint="@color/hint_color" />
 
         <!-- Confirm Password Input -->
         <EditText
@@ -129,7 +133,8 @@
             android:paddingVertical="20dp"
             android:paddingStart="16dp"
             android:paddingEnd="16dp"
-            android:textColor="#15919B" />
+            android:textColor="#15919B"
+            android:textColorHint="@color/hint_color" />
 
         <!-- Sign-Up Button -->
         <Button
@@ -137,7 +142,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginBottom="24dp"
-            android:backgroundTint="#09D1C7"
+            android:backgroundTint="?attr/colorSecondaryVariant"
             android:paddingVertical="20dp"
             android:text="Sign Up"
             android:textColor="@android:color/white" />
