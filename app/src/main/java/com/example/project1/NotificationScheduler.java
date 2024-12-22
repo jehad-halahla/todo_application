@@ -24,6 +24,7 @@ public class NotificationScheduler {
             SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault());
             calendar.setTime(sdf.parse(reminderTime));
             Log.d("NotificationScheduler", "Parsed reminder time: " + sdf.format(calendar.getTime()));
+
             // Calculate the current time
             Calendar now = Calendar.getInstance();
 
@@ -40,6 +41,13 @@ public class NotificationScheduler {
             // Create a pending intent to send a broadcast when the alarm goes off
             Intent intent = new Intent(context, NotificationReceiver.class);
             intent.putExtra("task_title", task.getTitle());  // Send task info
+            intent.putExtra("task_id", task.getId());
+            intent.putExtra("task_description", task.getDescription());
+            intent.putExtra("task_due_date", task.getDueDate());
+            intent.putExtra("task_due_time", task.getDueTime());
+            intent.putExtra("task_priority", task.getPriority());
+            intent.putExtra("task_reminder_time", task.getReminderTime());
+
             PendingIntent pendingIntent = PendingIntent.getBroadcast(context, (int) task.getId(), intent, PendingIntent.FLAG_UPDATE_CURRENT);
 
             // Get the AlarmManager system service
@@ -54,4 +62,3 @@ public class NotificationScheduler {
         }
     }
 }
-
