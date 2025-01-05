@@ -67,16 +67,13 @@ The Task Management App is an Android application designed to help users efficie
 3. Use the navigation drawer to explore the app’s features.
 
 ## Demo  
-![Demo](https://github.com/user-attachments/assets/805ca4a3-4e95-4f61-9f62-2ea3b8413881)  
-*A video showcasing the application in action will be available soon.*
+
+
+https://github.com/user-attachments/assets/0e6d3f80-38bb-4aa3-bab5-47f0fe652a6c
+
 
 ## Project Requirements
 - Tested on Pixel 3a XL (API Level 26).
 - Ensure permissions for notifications and storage are granted.
 
-## How to Contribute
-For contributions or feedback, please contact the developers.
-
-## License
-This project is licensed under the MIT License.
 
