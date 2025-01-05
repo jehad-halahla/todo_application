@@ -66,12 +66,8 @@ The Task Management App is an Android application designed to help users efficie
 2. Log in and manage your tasks.
 3. Use the navigation drawer to explore the app’s features.
 
-## Video Preview
-![Video preview](
-
-https://github.com/user-attachments/assets/805ca4a3-4e95-4f61-9f62-2ea3b8413881
-
-#)  
+## Demo  
+![Demo](https://github.com/user-attachments/assets/805ca4a3-4e95-4f61-9f62-2ea3b8413881)  
 *A video showcasing the application in action will be available soon.*
 
 ## Project Requirements
